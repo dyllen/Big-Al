@@ -336,22 +336,7 @@
       font-size: 0.95rem;
     }
 
-    .results {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas:
-        "tabs"
-        "contains"
-        "safe"
-        "allergens"
-        "ingredients";
-      min-width: 0;
-    }
-
     .results-tabs {
-      grid-area: tabs;
-      display: flex;
-      gap: 8px;
       position: relative;
       z-index: 2;
     }
@@ -397,6 +382,7 @@
     }
     .result.contains{
 		border:1px solid #bf0000;
+		margin-top:15px;
     }
 
     .result {
