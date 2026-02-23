@@ -752,6 +752,10 @@
       return normalize(a).localeCompare(normalize(b), undefined, { sensitivity: "base" });
     }
 
+    function sortAlphabetically(values) {
+      return [...values].sort(compareAlpha);
+    }
+
     function deduplicateRows(rows) {
       const dishLabels = new Map();
       const allergenLabels = new Map();
@@ -943,7 +947,7 @@
         return;
       }
 
-      const sortedDishes = [...dishes].sort(compareAlpha);
+      const sortedDishes = sortAlphabetically(dishes);
 
       for (const dish of sortedDishes) {
         const li = document.createElement("li");
@@ -953,8 +957,8 @@
         name.className = "menu-item-name";
         name.textContent = dish;
 
-        const ingredients = [...(dishToIngredients.get(dish) || [])].sort(compareAlpha);
-        const allergens = [...(dishToAllergens.get(dish) || [])].sort(compareAlpha);
+        const ingredients = sortAlphabetically(dishToIngredients.get(dish) || []);
+        const allergens = sortAlphabetically(dishToAllergens.get(dish) || []);
 
         const meta = document.createElement("div");
         meta.className = "menu-item-meta";
