@@ -352,41 +352,26 @@
     }
 
     .results-tabs {
-      grid-area: tabs;
       display: flex;
       gap: 8px;
-      margin-bottom: -8px;
-      padding-left: 8px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .results-tabs[hidden] {
-      display: none;
+      margin-bottom: 6px;
     }
 
     .results-tab {
       border: 1px solid var(--border);
-      border-bottom: none;
-      border-radius: 12px 12px 0 0;
-      background: #f7f9fd;
-      color: #41506a;
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
       font-weight: 700;
-      padding: 10px 14px;
+      padding: 8px 12px;
       min-height: auto;
       width: auto;
     }
 
     .results-tab.active {
-      background: #e8f0fe;
-      border-color: #bdd0ff;
-      color: #1a4fa3;
-    }
-
-    .results-tab.contains-tab.active {
-      background: #fce8e6;
-      border-color: #f3c2be;
-      color: #bd2424;
+      background: #1a73e8;
+      border-color: #1a73e8;
+      color: #fff;
     }
 
     .results.menu-item-filter .result {
@@ -643,8 +628,8 @@
 
     <section id="resultsContainer" class="results">
       <div id="resultsTabs" class="results-tabs" hidden>
-        <button id="containsTabButton" class="results-tab contains-tab active" type="button">Dishes containing allergens</button>
-        <button id="safeTabButton" class="results-tab safe-tab" type="button">Safe menu items</button>
+        <button id="containsTabButton" class="results-tab active" type="button">Dishes containing allergens</button>
+        <button id="safeTabButton" class="results-tab" type="button">Safe menu items</button>
       </div>
       <article class="result contains" id="containsDishesPanel" hidden>
         <p id="selectedAllergiesSummary" class="selected-allergies-summary" hidden></p>
