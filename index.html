@@ -1,0 +1,1323 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:," />
+  <title>Restaurant Allergen Checker</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #5f6b7a;
+      --accent: #6750a4;
+      --accent-soft: #efe8ff;
+      --ok: #0b7a43;
+      --danger: #b3261e;
+      --border: #d9dce3;
+      font-family: "Google Sans", "Roboto", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 24px 48px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 3vw, 2.8rem);
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.2rem;
+    }
+
+    .card {
+      margin-top: 22px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .workspace {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.05fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .workspace .card,
+    .workspace .results {
+      margin-top: 0;
+      height: 100%;
+      min-width: 0;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+      align-items: end;
+      min-width: 0;
+    }
+
+    .search-wrap {
+      margin: 10px 0 14px;
+      position: relative;
+    }
+
+    .search-token-input {
+      min-height: 64px;
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      background: #fff;
+    }
+
+    #searchTokenList {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .search-input {
+      border: none;
+      outline: none;
+      min-height: 44px;
+      font-size: 1.08rem;
+      flex: 1;
+      min-width: 190px;
+      padding: 0 6px;
+    }
+
+    .search-token {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .search-token.menu-item,
+    .chip-type.menu-item {
+      background: #e7f2ff;
+      color: #0a4ba8;
+      border-color: #b9d9ff;
+    }
+
+    .search-token.ingredient,
+    .chip-type.ingredient {
+      background: #eaf5ff;
+      color: #155799;
+      border-color: #c7e1ff;
+    }
+
+    .search-token.allergen,
+    .chip-type.allergen {
+      background: #ffe6e6;
+      color: #a01f1f;
+      border-color: #ffb8b8;
+    }
+
+    .search-token button {
+      min-height: auto;
+      width: auto;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .search-suggestions {
+      list-style: none;
+      margin: 8px 0 0;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      max-height: 220px;
+      overflow: auto;
+    }
+
+    .search-suggestions li {
+      padding: 10px 12px;
+      border-bottom: 1px solid #edf1fb;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .search-suggestions li:last-child { border-bottom: none; }
+
+    .chip-type {
+      font-size: 0.8rem;
+      margin-left: 8px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      text-transform: capitalize;
+    }
+
+
+    .mode-label {
+      margin: 0 0 8px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .option-divider {
+      text-align: center;
+      font-weight: 700;
+      color: var(--muted);
+      margin: 4px 0 10px;
+      font-size: 0.95rem;
+    }
+
+    .flat-icon {
+      display: inline-block;
+      font-size: 0.95em;
+      line-height: 1;
+      color: currentColor;
+      margin-right: 6px;
+    }
+
+    .geo-banner {
+      text-align: center;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #6750a4, #7a61bd);
+      border: none;
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 10px;
+      letter-spacing: 0.02em;
+      box-shadow: 0 2px 6px rgba(103, 80, 164, 0.35);
+    }
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+      min-width: 0;
+    }
+
+    .mode-button {
+      min-height: 74px;
+      width: 100%;
+      font-size: 1.15rem;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--accent-soft);
+      color: #111;
+      font-weight: 800;
+    }
+
+    #modeDishButton,
+    #modeIngredientButton {
+      background: #e8f0fe;
+      color: #1a73e8;
+      border-color: #c6dafc;
+    }
+
+    #modeAllergyButton {
+      background: #fce8e6;
+      color: #b3261e;
+      border-color: #f3c2be;
+    }
+
+    .mode-button.active {
+      color: #fff;
+    }
+
+    #modeDishButton.active,
+    #modeIngredientButton.active {
+      background: #1a73e8;
+      border-color: #1a73e8;
+      color: #fff;
+    }
+
+    #modeAllergyButton.active {
+      background: #b3261e;
+      border-color: #b3261e;
+      color: #fff;
+    }
+
+    .filter-group[hidden] {
+      display: none;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+
+    select, button {
+      min-height: 74px;
+      width: 100%;
+      max-width: 100%;
+      font-size: 1.2rem;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 0 16px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    select[multiple] {
+      min-height: 220px;
+      padding: 10px 12px;
+    }
+
+    button {
+      background: var(--accent-soft);
+      color: #111;
+      border-color: #bdd0ff;
+      font-weight: 800;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    select:focus-visible, button:focus-visible {
+      outline: 3px solid #6750a4;
+      outline-offset: 2px;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 14px;
+      justify-items: center;
+    }
+
+    .clear-link {
+      min-height: auto;
+      width: auto;
+      padding: 4px 8px;
+      border: none;
+      background: transparent;
+      color: #111;
+      text-decoration: underline;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .select-help {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "contains"
+        "safe"
+        "allergens"
+        "ingredients";
+      gap: 16px;
+      margin-top: 16px;
+      min-width: 0;
+    }
+
+    .result {
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      min-height: 230px;
+      background: #f2f2f2;
+      box-shadow: none;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+
+    #containsDishesPanel { grid-area: contains; }
+    #safeDishesPanel { grid-area: safe; }
+    #dishAllergensPanel { grid-area: allergens; }
+    #dishIngredientsPanel { grid-area: ingredients; }
+
+    .result h2 {
+      font-size: 1.3rem;
+      margin: 0 0 12px;
+      line-height: 1.2;
+    }
+    .selected-allergies-summary {
+      margin: 0 0 12px;
+      font-weight: 800;
+      color: #bd2424;
+      font-size: 1.3rem;
+      line-height: 1.2;
+    }
+
+
+    .contains h2 { color: #bd2424; }
+    .safe h2 { color: #15763d; }
+
+    .panel-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .print-safe-button {
+      min-height: auto;
+      width: auto;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+
+    .print-safe-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #safeDishesPanel {
+      border-color: transparent;
+      border-width: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    #safePanelTitle {
+      color: #000;
+      font-size: 0.65rem;
+      font-weight: 700;
+    }
+
+    #dishAllergensPanel {
+      border-color: #f4c0bc;
+      background: #fff3f2;
+    }
+
+    #dishAllergensPanel h2 {
+      display: inline-block;
+      background: #bd2424;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 14px;
+      letter-spacing: 0.01em;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 24px;
+      font-size: 1.15rem;
+      line-height: 1.55;
+    }
+
+    .menu-item-match-list {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .menu-item-match {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+
+    .menu-item-name {
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+
+    .menu-item-meta {
+      color: var(--ink);
+      font-size: 0.98rem;
+      line-height: 1.45;
+    }
+
+    .menu-item-allergens {
+      color: #bd2424;
+      font-weight: 800;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .loading,
+    .error,
+    .meta {
+      margin-top: 14px;
+      font-size: 1rem;
+    }
+
+    .loading,
+    .meta { color: var(--muted); }
+
+    .error {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    @media (max-width: 820px) {
+      .page { padding: 20px 14px 34px; }
+      .workspace {
+        grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.05fr);
+        gap: 14px;
+      }
+      .card { padding: 16px; border-radius: 14px; }
+      select, button { min-height: 64px; font-size: 1.05rem; }
+      label { font-size: 1.05rem; }
+      .result h2 { font-size: 1.15rem; }
+      ul { font-size: 1.02rem; }
+      .mode-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .filters { grid-template-columns: minmax(0, 1fr); }
+      .mode-button { font-size: 1rem; min-height: 60px; padding: 0 8px; }
+    }
+
+    @media (max-width: 700px) {
+      .page { padding: 20px 14px 34px; }
+      .workspace { grid-template-columns: 1fr; }
+      .card { padding: 16px; border-radius: 14px; }
+      select, button { min-height: 64px; font-size: 1.05rem; }
+      label { font-size: 1.05rem; }
+      .result h2 { font-size: 1.15rem; }
+      ul { font-size: 1.02rem; }
+      .mode-grid { grid-template-columns: 1fr; }
+      .results {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "contains"
+          "safe"
+          "allergens"
+          "ingredients";
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="geo-banner">★ WELCOME TO BIG AL'S ALLERGEN ZONE ★</div>
+    </header>
+
+    <div class="workspace">
+    <section class="card">
+      <div class="search-wrap">
+        <label for="quickSearch">Quick search (menu item, ingredient, or allergen)</label>
+        <div class="search-token-input" id="searchTokenInput">
+          <div id="searchTokenList"></div>
+          <input id="quickSearch" class="search-input" type="text" placeholder="Type to search and add filter tokens…" autocomplete="off" />
+        </div>
+        <ul id="searchSuggestions" class="search-suggestions" hidden></ul>
+      </div>
+
+      <p class="option-divider">— OR use button-based filtering below —</p>
+
+      <p class="mode-label"><span class="flat-icon">▣</span> Filter options</p>
+      <div class="mode-grid">
+        <button id="modeDishButton" class="mode-button" type="button">Menu Item</button>
+        <button id="modeIngredientButton" class="mode-button" type="button">Ingredient</button>
+        <button id="modeAllergyButton" class="mode-button" type="button">Allergen</button>
+      </div>
+
+      <div class="filters">
+        <div id="ingredientFilterGroup" class="filter-group" hidden>
+          <label for="ingredientSelect">Ingredient</label>
+          <select id="ingredientSelect" multiple>
+            <option value="">All ingredients</option>
+          </select>
+          <p class="select-help">Tap to select one or more ingredients.</p>
+        </div>
+        <div id="allergyFilterGroup" class="filter-group" hidden>
+          <label for="allergySelect">Allergen</label>
+          <select id="allergySelect" multiple>
+            <option value="">All allergens</option>
+          </select>
+          <p class="select-help">Tap to select one or more allergens.</p>
+        </div>
+        <div id="dishFilterGroup" class="filter-group" hidden>
+          <label for="dishSelect">Menu item</label>
+          <select id="dishSelect">
+            <option value="">All menu items</option>
+          </select>
+        </div>
+      </div>
+      <div class="button-grid">
+        <button id="clearButton" type="button" class="clear-link">Clear filters</button>
+      </div>
+      <p class="meta" id="sheetStatus">Waiting to load data…</p>
+      <p class="loading" id="loadingIndicator">Loading sheet data…</p>
+      <p class="error" id="errorMessage" hidden></p>
+    </section>
+
+    <section class="results">
+      <article class="result contains" id="containsDishesPanel" hidden>
+        <p id="selectedAllergiesSummary" class="selected-allergies-summary" hidden></p>
+        <ul id="containsDishList"></ul>
+      </article>
+      <article class="result safe" id="safeDishesPanel" hidden>
+        <div class="panel-title-row">
+          <h2 id="safePanelTitle">Safe menu items</h2>
+          <button id="printSafeButton" class="print-safe-button" type="button" aria-label="Print safe menu items list" title="Print safe menu items">🖨</button>
+        </div>
+        <ul id="safeDishList"></ul>
+      </article>
+      <article class="result contains" id="dishAllergensPanel" hidden>
+        <h2><span class="flat-icon">◉</span> Allergens in selected menu item</h2>
+        <ul id="dishAllergenList"></ul>
+      </article>
+      <article class="result safe" id="dishIngredientsPanel" hidden>
+        <h2><span class="flat-icon">◉</span> All ingredients in selected menu item</h2>
+        <ul id="dishIngredientList"></ul>
+      </article>
+    </section>
+    </div>
+  </main>
+
+  <script>
+    const SHEET_ID = "1NpN5obK9JLnkIxRsJPCQvKI58Qwxnn31AWMMk6JLIrg";
+    const gvizBaseUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+    const state = {
+      rows: [],
+      dishes: [],
+      allergens: [],
+      ingredients: [],
+      searchIndex: [],
+      mode: "",
+      selectedIngredient: [],
+      selectedAllergy: [],
+      selectedDish: "",
+      searchTokens: [],
+      currentSafeDishes: [],
+      currentSafePrintTitle: "Safe menu items"
+    };
+
+    const refs = {
+      modeDishButton: document.getElementById("modeDishButton"),
+      modeIngredientButton: document.getElementById("modeIngredientButton"),
+      modeAllergyButton: document.getElementById("modeAllergyButton"),
+      ingredientFilterGroup: document.getElementById("ingredientFilterGroup"),
+      allergyFilterGroup: document.getElementById("allergyFilterGroup"),
+      dishFilterGroup: document.getElementById("dishFilterGroup"),
+      ingredientSelect: document.getElementById("ingredientSelect"),
+      allergySelect: document.getElementById("allergySelect"),
+      dishSelect: document.getElementById("dishSelect"),
+      quickSearch: document.getElementById("quickSearch"),
+      searchTokenInput: document.getElementById("searchTokenInput"),
+      searchTokenList: document.getElementById("searchTokenList"),
+      searchSuggestions: document.getElementById("searchSuggestions"),
+      clearButton: document.getElementById("clearButton"),
+      containsDishesPanel: document.getElementById("containsDishesPanel"),
+      safeDishesPanel: document.getElementById("safeDishesPanel"),
+      selectedAllergiesSummary: document.getElementById("selectedAllergiesSummary"),
+      dishAllergensPanel: document.getElementById("dishAllergensPanel"),
+      dishIngredientsPanel: document.getElementById("dishIngredientsPanel"),
+      containsDishList: document.getElementById("containsDishList"),
+      safeDishList: document.getElementById("safeDishList"),
+      safePanelTitle: document.getElementById("safePanelTitle"),
+      printSafeButton: document.getElementById("printSafeButton"),
+      dishAllergenList: document.getElementById("dishAllergenList"),
+      dishIngredientList: document.getElementById("dishIngredientList"),
+      loadingIndicator: document.getElementById("loadingIndicator"),
+      errorMessage: document.getElementById("errorMessage"),
+      sheetStatus: document.getElementById("sheetStatus")
+    };
+
+    function normalize(str) {
+      return String(str || "").trim();
+    }
+
+
+    function canonicalKey(str) {
+      return normalize(str).toLowerCase().replace(/\s+/g, " ");
+    }
+
+    function toSentenceCase(str) {
+      const text = normalize(str).replace(/\s+/g, " ");
+      if (!text) return "";
+      const lower = text.toLowerCase();
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    }
+
+    function toCapitalizedCase(str) {
+      return normalize(str)
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .filter(Boolean)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    }
+
+    function compareAlpha(a, b) {
+      return normalize(a).localeCompare(normalize(b), undefined, { sensitivity: "base" });
+    }
+
+    function deduplicateRows(rows) {
+      const dishLabels = new Map();
+      const allergenLabels = new Map();
+      const ingredientLabels = new Map();
+      const pairKeys = [];
+      const seenPairs = new Set();
+
+      const choosePreferredLabel = (existing, candidate) => {
+        if (!existing) return candidate;
+        const existingLower = existing === existing.toLowerCase();
+        const candidateLower = candidate === candidate.toLowerCase();
+        if (existingLower && !candidateLower) return candidate;
+        return existing;
+      };
+
+      for (const row of rows) {
+        const rawDish = toCapitalizedCase(row.dish);
+        const rawAllergen = toSentenceCase(row.allergen);
+        const rawIngredient = toSentenceCase(row.ingredient || row.allergen);
+        const normalizedAllergen = rawAllergen || rawIngredient;
+        if (!rawDish || !rawIngredient) continue;
+
+        const dishKey = canonicalKey(rawDish);
+        const allergenKey = canonicalKey(normalizedAllergen);
+        const ingredientKey = canonicalKey(rawIngredient);
+        if (!dishKey || !ingredientKey) continue;
+
+        dishLabels.set(dishKey, choosePreferredLabel(dishLabels.get(dishKey), rawDish));
+        allergenLabels.set(allergenKey, choosePreferredLabel(allergenLabels.get(allergenKey), normalizedAllergen));
+        if (ingredientKey) ingredientLabels.set(ingredientKey, choosePreferredLabel(ingredientLabels.get(ingredientKey), rawIngredient || rawAllergen));
+
+        const dedupeKey = `${dishKey}||${ingredientKey}||${allergenKey}`;
+        if (!seenPairs.has(dedupeKey)) {
+          seenPairs.add(dedupeKey);
+          pairKeys.push([dishKey, allergenKey, ingredientKey || allergenKey]);
+        }
+      }
+
+      return pairKeys.map(([dishKey, allergenKey, ingredientKey]) => ({
+        dish: dishLabels.get(dishKey),
+        allergen: allergenLabels.get(allergenKey),
+        ingredient: ingredientLabels.get(ingredientKey) || allergenLabels.get(allergenKey)
+      }));
+    }
+
+    function setLoading(loading, text = "Loading sheet data…") {
+      refs.loadingIndicator.hidden = !loading;
+      refs.loadingIndicator.textContent = text;
+    }
+
+    function setError(message = "") {
+      refs.errorMessage.hidden = !message;
+      refs.errorMessage.textContent = message;
+    }
+
+    function buildSearchIndex() {
+      const items = [];
+      state.dishes.forEach(value => items.push({ type: "menu item", value }));
+      state.ingredients.forEach(value => items.push({ type: "ingredient", value }));
+      state.allergens.forEach(value => items.push({ type: "allergen", value }));
+      state.searchIndex = items;
+    }
+
+    function renderSearchSuggestions(query) {
+      const q = normalize(query).toLowerCase();
+      refs.searchSuggestions.innerHTML = "";
+      if (!q) {
+        refs.searchSuggestions.hidden = true;
+        return;
+      }
+
+      const matches = state.searchIndex
+        .filter(item => item.value.toLowerCase().includes(q))
+        .sort((a, b) => compareAlpha(a.value, b.value))
+        .slice(0, 10);
+
+      if (!matches.length) {
+        refs.searchSuggestions.hidden = true;
+        return;
+      }
+
+      for (const item of matches) {
+        const li = document.createElement("li");
+        li.dataset.type = item.type;
+        li.dataset.value = item.value;
+        const chipClass = item.type === "allergen" ? "allergen" : item.type.replace(" ", "-");
+        li.innerHTML = `${item.value}<span class="chip-type ${chipClass}">${item.type}</span>`;
+        refs.searchSuggestions.appendChild(li);
+      }
+
+      refs.searchSuggestions.hidden = false;
+    }
+
+
+    function tokenClass(type) {
+      return type.replace(/\s+/g, "-");
+    }
+
+    function renderSearchTokens() {
+      refs.searchTokenList.innerHTML = "";
+      state.searchTokens.forEach(({ type, value }) => {
+        const token = document.createElement("span");
+        token.className = `search-token ${tokenClass(type)}`;
+        token.textContent = value;
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.setAttribute("aria-label", `Remove ${value}`);
+        removeBtn.textContent = "×";
+        removeBtn.addEventListener("click", () => removeSearchToken(type, value));
+
+        token.appendChild(removeBtn);
+        refs.searchTokenList.appendChild(token);
+      });
+    }
+
+    function removeSearchToken(type, value) {
+      state.searchTokens = state.searchTokens.filter(token => !(token.type === type && token.value === value));
+      if (type === "menu item") {
+        if (refs.dishSelect.value === value) refs.dishSelect.value = "";
+      } else if (type === "ingredient") {
+        const option = Array.from(refs.ingredientSelect.options).find(opt => opt.value === value);
+        if (option) option.selected = false;
+      } else {
+        const option = Array.from(refs.allergySelect.options).find(opt => opt.value === value);
+        if (option) option.selected = false;
+      }
+      renderSearchTokens();
+      updateResults();
+    }
+
+    function addSearchToken(type, value) {
+      if (type === "menu item") {
+        setMode("dish");
+        refs.dishSelect.value = value;
+        state.searchTokens = [{ type: "menu item", value }];
+      } else if (type === "ingredient") {
+        setMode("ingredient");
+        const option = Array.from(refs.ingredientSelect.options).find(opt => opt.value === value);
+        if (option) option.selected = true;
+        if (!state.searchTokens.some(token => token.type === "ingredient" && token.value === value)) {
+          state.searchTokens.push({ type: "ingredient", value });
+        }
+      } else {
+        setMode("allergy");
+        const option = Array.from(refs.allergySelect.options).find(opt => opt.value === value);
+        if (option) option.selected = true;
+        if (!state.searchTokens.some(token => token.type === "allergen" && token.value === value)) {
+          state.searchTokens.push({ type: "allergen", value });
+        }
+      }
+      refs.quickSearch.value = "";
+      refs.searchSuggestions.hidden = true;
+      renderSearchTokens();
+      updateResults();
+    }
+
+    function applySearchSelection(type, value) {
+      addSearchToken(type, value);
+    }
+
+    function renderList(element, items, emptyMessage) {
+      element.classList.remove("menu-item-match-list");
+      element.innerHTML = "";
+      if (!items.length) {
+        const li = document.createElement("li");
+        li.textContent = emptyMessage;
+        li.className = "muted";
+        element.appendChild(li);
+        return;
+      }
+
+      for (const item of items) {
+        const li = document.createElement("li");
+        li.textContent = item;
+        element.appendChild(li);
+      }
+    }
+
+    function renderMenuItemCards(element, dishes, dishToIngredients, dishToAllergens, emptyMessage) {
+      element.innerHTML = "";
+      element.classList.add("menu-item-match-list");
+
+      if (!dishes.length) {
+        const li = document.createElement("li");
+        li.className = "muted";
+        li.textContent = emptyMessage;
+        element.appendChild(li);
+        return;
+      }
+
+      const sortedDishes = [...dishes].sort(compareAlpha);
+
+      for (const dish of sortedDishes) {
+        const li = document.createElement("li");
+        li.className = "menu-item-match";
+
+        const name = document.createElement("div");
+        name.className = "menu-item-name";
+        name.textContent = dish;
+
+        const ingredients = [...(dishToIngredients.get(dish) || [])].sort(compareAlpha);
+        const allergens = [...(dishToAllergens.get(dish) || [])].sort(compareAlpha);
+
+        const meta = document.createElement("div");
+        meta.className = "menu-item-meta";
+
+        const allergensLine = document.createElement("div");
+        allergensLine.className = "menu-item-allergens";
+        allergensLine.textContent = `Allergens: ${allergens.join(", ") || "None listed"}`;
+
+        const ingredientsLine = document.createElement("div");
+        ingredientsLine.textContent = `Ingredients: ${ingredients.join(", ") || "None listed"}`;
+
+        meta.appendChild(allergensLine);
+        meta.appendChild(ingredientsLine);
+
+        li.appendChild(name);
+        li.appendChild(meta);
+        element.appendChild(li);
+      }
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      refs.modeDishButton.classList.toggle("active", mode === "dish");
+      refs.modeIngredientButton.classList.toggle("active", mode === "ingredient");
+      refs.modeAllergyButton.classList.toggle("active", mode === "allergy");
+
+      refs.dishFilterGroup.hidden = mode !== "dish";
+      refs.ingredientFilterGroup.hidden = mode !== "ingredient";
+      refs.allergyFilterGroup.hidden = mode !== "allergy";
+
+      if (mode !== "ingredient") Array.from(refs.ingredientSelect.options).forEach(opt => { opt.selected = false; });
+      if (mode !== "dish") refs.dishSelect.value = "";
+      if (mode !== "allergy") Array.from(refs.allergySelect.options).forEach(opt => { opt.selected = false; });
+
+      updateResults();
+    }
+
+    function parseGvizObject(json) {
+      const rowCells = (json.table.rows || []).map(row => (row.c || []).map(cell => normalize(cell?.v ?? cell?.f)));
+      return extractRowsFromContentsColumns(rowCells, "sheet");
+    }
+
+    function parseGviz(text) {
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+      if (start < 0 || end < 0) throw new Error("Unexpected GViz response format");
+      const json = JSON.parse(text.slice(start, end + 1));
+      return parseGvizObject(json);
+    }
+
+    function loadGvizViaJsonp() {
+      return new Promise((resolve, reject) => {
+        const callbackName = `sheetCallback_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        const params = new URLSearchParams({
+          tqx: `out:json;responseHandler:${callbackName}`
+        });
+        const url = `${gvizBaseUrl}?${params.toString()}`;
+
+        const script = document.createElement("script");
+        const timeoutId = window.setTimeout(() => {
+          cleanup();
+          reject(new Error("Timed out while loading sheet data via JSONP"));
+        }, 12000);
+
+        function cleanup() {
+          window.clearTimeout(timeoutId);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          delete window[callbackName];
+        }
+
+        window[callbackName] = (json) => {
+          try {
+            cleanup();
+            resolve(parseGvizObject(json));
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        script.src = url;
+        script.async = true;
+        script.onerror = () => {
+          cleanup();
+          reject(new Error("JSONP request failed"));
+        };
+
+        document.head.appendChild(script);
+      });
+    }
+
+    function parseCsv(text) {
+      const lines = text.split(/\r?\n/).filter(Boolean);
+      if (lines.length < 2) return [];
+
+      const splitCsvLine = (line) => {
+        const cells = [];
+        let current = "";
+        let insideQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') {
+            if (insideQuotes && line[i + 1] === '"') {
+              current += '"';
+              i++;
+            } else {
+              insideQuotes = !insideQuotes;
+            }
+          } else if (ch === ',' && !insideQuotes) {
+            cells.push(current);
+            current = "";
+          } else {
+            current += ch;
+          }
+        }
+        cells.push(current);
+        return cells.map(c => normalize(c));
+      };
+
+      const rowCells = lines.map(splitCsvLine);
+      return extractRowsFromContentsColumns(rowCells, "CSV");
+    }
+
+    function extractRowsFromContentsColumns(rows, sourceLabel) {
+      if (!rows.length) return [];
+
+      const DISH_COL_INDEX = 0; // Column A
+      const INGREDIENT_COL_INDEX = 1; // Column B
+      const ALLERGEN_COL_INDEX = 2; // Column C
+      const splitValues = (value) => normalize(value)
+        .split(/[;,|]/)
+        .map(v => normalize(v))
+        .filter(Boolean);
+
+      const dataRows = rows.slice(1); // ignore top title row
+      const parsedRows = [];
+
+      for (const cells of dataRows) {
+        const dish = normalize(cells[DISH_COL_INDEX]);
+        const ingredientTokens = splitValues(cells[INGREDIENT_COL_INDEX]);
+        const allergenTokens = splitValues(cells[ALLERGEN_COL_INDEX]);
+        if (!dish) continue;
+
+        if (!ingredientTokens.length && !allergenTokens.length) continue;
+
+        const ingredients = ingredientTokens.length ? ingredientTokens : [""];
+        const allergens = allergenTokens.length ? allergenTokens : [""];
+
+        for (const ingredient of ingredients) {
+          for (const allergen of allergens) {
+            parsedRows.push({
+              dish,
+              ingredient: ingredient || allergen,
+              allergen: allergen || ingredient
+            });
+          }
+        }
+      }
+
+      if (parsedRows.length) return parsedRows;
+      throw new Error(`No usable menu item/ingredient/allergen rows found in columns A-C from ${sourceLabel}`);
+    }
+
+    async function loadSheetData() {
+      setLoading(true, "Loading latest data from Google Sheet…");
+      setError("");
+
+      try {
+        let rows = [];
+
+        const runningFromFileProtocol = window.location.protocol === "file:";
+        if (runningFromFileProtocol) {
+          rows = await loadGvizViaJsonp();
+        } else {
+          const gvizResp = await fetch(`${gvizBaseUrl}?tqx=out:json`, { cache: "no-store" });
+          if (gvizResp.ok) {
+            rows = parseGviz(await gvizResp.text());
+          }
+        }
+
+        if (!rows.length) {
+          const csvResp = await fetch(csvUrl, { cache: "no-store" });
+          if (!csvResp.ok) throw new Error(`CSV fetch failed (${csvResp.status})`);
+          rows = parseCsv(await csvResp.text());
+        }
+
+        rows = deduplicateRows(rows);
+        if (!rows.length) throw new Error("No menu item/ingredient rows found in sheet");
+
+        state.rows = rows;
+        state.dishes = [...new Set(rows.map(r => r.dish))].sort(compareAlpha);
+        state.allergens = [...new Set(rows.map(r => r.allergen))].sort(compareAlpha);
+        state.ingredients = [...new Set(rows.map(r => r.ingredient || r.allergen))].sort(compareAlpha);
+        buildSearchIndex();
+
+        populateSelect(refs.dishSelect, state.dishes, "All menu items", state.selectedDish);
+        populateSelect(refs.ingredientSelect, state.ingredients, "All ingredients", state.selectedIngredient);
+        populateSelect(refs.allergySelect, state.allergens, "All allergens", state.selectedAllergy);
+
+        refs.sheetStatus.textContent = `Loaded ${state.rows.length} unique records from sheet • Updated ${new Date().toLocaleTimeString()}`;
+        updateResults();
+      } catch (error) {
+        console.error(error);
+        setError(`Could not load the sheet. ${error.message}`);
+        refs.sheetStatus.textContent = "Data unavailable. If opened as a local file, use a local web server if this persists.";
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function populateSelect(selectElement, values, defaultLabel, selectedValue) {
+      selectElement.innerHTML = "";
+
+      values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        selectElement.appendChild(option);
+      });
+
+      if (selectElement.multiple) {
+        const selectedSet = new Set(selectedValue || []);
+        Array.from(selectElement.options).forEach(option => {
+          option.selected = selectedSet.has(option.value);
+        });
+      } else if (selectedValue && values.includes(selectedValue)) {
+        selectElement.value = selectedValue;
+      } else {
+        selectElement.value = "";
+      }
+    }
+
+    function printSafeDishes() {
+      const dishes = state.currentSafeDishes || [];
+      if (!dishes.length) return;
+
+      const printableTitle = state.currentSafePrintTitle || "Safe menu items";
+      const printableHtml = `<!doctype html><html><head><meta charset="utf-8"><title>${printableTitle}</title>
+      <style>
+      @page { margin: 16mm; }
+      body{font-family:"Google Sans","Roboto","Noto Sans",Arial,sans-serif;padding:0;color:#1f2937}
+      h1{margin:0 0 12px;font-size:22px}
+      ul{margin:0;padding-left:20px;line-height:1.6}
+      .print-disclaimer{margin-top:18px;font-size:12px;line-height:1.45;color:#4b5563}
+      </style>
+      </head><body><h1>${printableTitle}</h1><ul>${dishes.map(d => `<li>${d}</li>`).join("")}</ul><p class="print-disclaimer">Disclaimer: We do our best to ensure menu items are safe, but we cannot guarantee 100% protection against cross-contamination.</p></body></html>`;
+
+      const frame = document.createElement("iframe");
+      frame.style.position = "fixed";
+      frame.style.right = "0";
+      frame.style.bottom = "0";
+      frame.style.width = "0";
+      frame.style.height = "0";
+      frame.style.border = "0";
+      frame.setAttribute("aria-hidden", "true");
+      document.body.appendChild(frame);
+
+      const frameDoc = frame.contentWindow?.document;
+      if (!frameDoc || !frame.contentWindow) {
+        frame.remove();
+        return;
+      }
+
+      frameDoc.open();
+      frameDoc.write(printableHtml);
+      frameDoc.close();
+
+      frame.onload = () => {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+        window.setTimeout(() => frame.remove(), 1000);
+      };
+    }
+
+    function getSelectedValues(selectElement) {
+      return Array.from(selectElement.selectedOptions).map(option => option.value).filter(Boolean);
+    }
+
+    function updateResults() {
+      const selectedIngredient = state.mode === "ingredient" ? getSelectedValues(refs.ingredientSelect) : [];
+      const selectedAllergy = state.mode === "allergy" ? getSelectedValues(refs.allergySelect) : [];
+      const selectedDish = state.mode === "dish" ? refs.dishSelect.value : "";
+      state.selectedIngredient = selectedIngredient;
+      state.selectedAllergy = selectedAllergy;
+      state.selectedDish = selectedDish;
+
+      const dishToAllergens = new Map();
+      const dishToIngredients = new Map();
+      state.dishes.forEach(d => { dishToAllergens.set(d, new Set()); dishToIngredients.set(d, new Set()); });
+      state.rows.forEach(({ dish, allergen, ingredient }) => {
+        dishToAllergens.get(dish)?.add(allergen);
+        dishToIngredients.get(dish)?.add(ingredient || allergen);
+      });
+
+      const activeFilters = [...selectedIngredient, ...selectedAllergy];
+      const hasAllergyFilters = state.mode === "allergy" && selectedAllergy.length > 0;
+      const hasIngredientFilters = state.mode === "ingredient" && selectedIngredient.length > 0;
+
+      const containsDishes = state.mode === "dish"
+        ? (selectedDish ? [selectedDish] : [])
+        : activeFilters.length
+          ? state.dishes.filter(dish => {
+              const values = state.mode === "allergy"
+                ? [...(dishToAllergens.get(dish) || [])]
+                : [...(dishToIngredients.get(dish) || [])];
+              return values.some(value => activeFilters.some(filter => value.toLowerCase().includes(filter.toLowerCase())));
+            })
+          : [];
+
+      const safeDishes = (hasAllergyFilters || hasIngredientFilters)
+        ? state.dishes.filter(dish => {
+            const values = hasAllergyFilters
+              ? [...(dishToAllergens.get(dish) || [])]
+              : [...(dishToIngredients.get(dish) || [])];
+            const filters = hasAllergyFilters ? selectedAllergy : selectedIngredient;
+            return !values.some(value => filters.some(filter => value.toLowerCase().includes(filter.toLowerCase())));
+          })
+        : [];
+      state.currentSafeDishes = [...safeDishes].sort(compareAlpha);
+
+      if (hasAllergyFilters) {
+        refs.safePanelTitle.textContent = "Safe menu items";
+        state.currentSafePrintTitle = `Menu items free from ${selectedAllergy.join(", ")}`;
+      } else if (hasIngredientFilters) {
+        refs.safePanelTitle.textContent = "Menu items without selected ingredient";
+        state.currentSafePrintTitle = `Menu items without ${selectedIngredient.join(", ")}`;
+      } else {
+        refs.safePanelTitle.textContent = "Safe menu items";
+        state.currentSafePrintTitle = "Safe menu items";
+      }
+
+      const hasActiveQuery = state.mode === "dish" ? Boolean(selectedDish) : activeFilters.length > 0;
+
+      refs.containsDishesPanel.hidden = !hasActiveQuery;
+      refs.safeDishesPanel.hidden = !(hasAllergyFilters || hasIngredientFilters);
+      refs.printSafeButton.disabled = state.currentSafeDishes.length === 0;
+      refs.dishAllergensPanel.hidden = true;
+      refs.dishIngredientsPanel.hidden = true;
+
+      if (hasAllergyFilters) {
+        refs.selectedAllergiesSummary.hidden = false;
+        refs.selectedAllergiesSummary.textContent = `Allergens: ${selectedAllergy.join(", ")}`;
+      } else if (hasIngredientFilters) {
+        refs.selectedAllergiesSummary.hidden = false;
+        refs.selectedAllergiesSummary.textContent = `Menu Items Containing ${selectedIngredient.join(", ")}`;
+      } else {
+        refs.selectedAllergiesSummary.hidden = true;
+        refs.selectedAllergiesSummary.textContent = "";
+      }
+
+      renderMenuItemCards(
+        refs.containsDishList,
+        containsDishes,
+        dishToIngredients,
+        dishToAllergens,
+        state.mode === "dish"
+          ? "Choose a menu item to see its details."
+          : "Choose one or more ingredients/allergens to see matching menu items."
+      );
+
+      renderMenuItemCards(
+        refs.safeDishList,
+        state.currentSafeDishes,
+        dishToIngredients,
+        dishToAllergens,
+        hasAllergyFilters ? "No safe menu items for the selected allergens." : hasIngredientFilters ? "No menu items were found outside the selected ingredients." : "Choose one or more allergens or ingredients to see safe menu items."
+      );
+
+      refs.dishAllergenList.innerHTML = "";
+      refs.dishIngredientList.innerHTML = "";
+    }
+
+    refs.ingredientSelect.addEventListener("change", updateResults);
+    refs.allergySelect.addEventListener("change", updateResults);
+    refs.dishSelect.addEventListener("change", updateResults);
+    refs.modeDishButton.addEventListener("click", () => setMode("dish"));
+    refs.modeIngredientButton.addEventListener("click", () => setMode("ingredient"));
+    refs.modeAllergyButton.addEventListener("click", () => setMode("allergy"));
+    refs.quickSearch.addEventListener("input", (event) => renderSearchSuggestions(event.target.value));
+    refs.quickSearch.addEventListener("keydown", (event) => {
+      if (event.key === "Backspace" && !refs.quickSearch.value && state.searchTokens.length) {
+        const last = state.searchTokens[state.searchTokens.length - 1];
+        removeSearchToken(last.type, last.value);
+      }
+      if (event.key === "Enter") {
+        const firstSuggestion = refs.searchSuggestions.querySelector("li");
+        if (firstSuggestion) {
+          event.preventDefault();
+          applySearchSelection(firstSuggestion.dataset.type, firstSuggestion.dataset.value);
+        }
+      }
+    });
+    refs.searchTokenInput.addEventListener("click", () => refs.quickSearch.focus());
+    refs.searchSuggestions.addEventListener("click", (event) => {
+      const target = event.target.closest("li");
+      if (!target) return;
+      applySearchSelection(target.dataset.type, target.dataset.value);
+    });
+    refs.printSafeButton.addEventListener("click", printSafeDishes);
+    refs.clearButton.addEventListener("click", () => {
+      state.mode = "";
+      refs.modeDishButton.classList.remove("active");
+      refs.modeIngredientButton.classList.remove("active");
+      refs.modeAllergyButton.classList.remove("active");
+      refs.ingredientFilterGroup.hidden = true;
+      refs.allergyFilterGroup.hidden = true;
+      refs.dishFilterGroup.hidden = true;
+      Array.from(refs.ingredientSelect.options).forEach(opt => { opt.selected = false; });
+      Array.from(refs.allergySelect.options).forEach(opt => { opt.selected = false; });
+      refs.dishSelect.value = "";
+      refs.quickSearch.value = "";
+      state.searchTokens = [];
+      renderSearchTokens();
+      refs.searchSuggestions.hidden = true;
+      refs.selectedAllergiesSummary.hidden = true;
+      refs.selectedAllergiesSummary.textContent = "";
+      refs.safeDishesPanel.hidden = true;
+      state.currentSafeDishes = [];
+      state.currentSafePrintTitle = "Safe menu items";
+      refs.safePanelTitle.textContent = "Safe menu items";
+      refs.printSafeButton.disabled = true;
+      updateResults();
+    });
+
+    refs.printSafeButton.disabled = true;
+    renderSearchTokens();
+    loadSheetData();
+  </script>
+</body>
+</html>
