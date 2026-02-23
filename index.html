@@ -535,6 +535,17 @@
       font-weight: 700;
     }
 
+    .results-placeholder {
+      margin: 0;
+      padding: 14px;
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 1.05rem;
+      text-align: center;
+    }
+
     @media (max-width: 820px) {
       .page { padding: 20px 14px 34px; }
       .workspace {
@@ -632,6 +643,7 @@
         <button id="containsTabButton" class="results-tab contains-tab active" type="button">Dishes containing allergens</button>
         <button id="safeTabButton" class="results-tab safe-tab" type="button">View safe menu items</button>
       </div>
+      <p id="resultsPlaceholder" class="results-placeholder">Filter by Menu Item, Ingredient or Allergen to see results</p>
       <article class="result contains" id="containsDishesPanel" hidden>
         <p id="selectedAllergiesSummary" class="selected-allergies-summary" hidden></p>
         <ul id="containsDishList"></ul>
@@ -691,6 +703,7 @@
       searchSuggestions: document.getElementById("searchSuggestions"),
       clearButton: document.getElementById("clearButton"),
       resultsContainer: document.getElementById("resultsContainer"),
+      resultsPlaceholder: document.getElementById("resultsPlaceholder"),
       resultsTabs: document.getElementById("resultsTabs"),
       containsTabButton: document.getElementById("containsTabButton"),
       safeTabButton: document.getElementById("safeTabButton"),
@@ -1278,6 +1291,7 @@
       const hasActiveQuery = state.mode === "dish" ? Boolean(selectedDish) : activeFilters.length > 0;
       const canToggleResultTabs = state.mode !== "dish" && (hasAllergyFilters || hasIngredientFilters);
       if (!canToggleResultTabs) state.resultsTab = "contains";
+      refs.resultsPlaceholder.hidden = hasActiveQuery;
 
       refs.resultsTabs.hidden = !canToggleResultTabs;
       refs.containsTabButton.classList.toggle("active", state.resultsTab === "contains");
