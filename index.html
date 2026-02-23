@@ -341,6 +341,7 @@
       display: grid;
       grid-template-columns: minmax(0, 1fr);
       grid-template-areas:
+        "tabs"
         "contains"
         "safe"
         "allergens"
@@ -348,6 +349,50 @@
       gap: 16px;
       margin-top: 16px;
       min-width: 0;
+    }
+
+    .results-tabs {
+      grid-area: tabs;
+      display: flex;
+      gap: 8px;
+      margin-bottom: -8px;
+      padding-left: 8px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .results-tabs[hidden] {
+      display: none;
+    }
+
+    .results-tab {
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+      background: #f7f9fd;
+      color: #41506a;
+      font-weight: 700;
+      padding: 10px 14px;
+      min-height: auto;
+      width: auto;
+    }
+
+    .results-tab.active {
+      background: #e8f0fe;
+      border-color: #bdd0ff;
+      color: #1a4fa3;
+    }
+
+    .results-tab.contains-tab.active {
+      background: #fce8e6;
+      border-color: #f3c2be;
+      color: #bd2424;
+    }
+
+    .results.menu-item-filter .result {
+      border-color: transparent;
+      border-width: 0;
+      background: transparent;
     }
     .result.contains{
 		border:1px solid #bf0000;
@@ -596,7 +641,11 @@
       <p class="error" id="errorMessage" hidden></p>
     </section>
 
-    <section class="results">
+    <section id="resultsContainer" class="results">
+      <div id="resultsTabs" class="results-tabs" hidden>
+        <button id="containsTabButton" class="results-tab contains-tab active" type="button">Dishes containing allergens</button>
+        <button id="safeTabButton" class="results-tab safe-tab" type="button">Safe menu items</button>
+      </div>
       <article class="result contains" id="containsDishesPanel" hidden>
         <p id="selectedAllergiesSummary" class="selected-allergies-summary" hidden></p>
         <ul id="containsDishList"></ul>
@@ -636,7 +685,8 @@
       selectedDish: "",
       searchTokens: [],
       currentSafeDishes: [],
-      currentSafePrintTitle: "Safe menu items"
+      currentSafePrintTitle: "Safe menu items",
+      resultsTab: "contains"
     };
 
     const refs = {
@@ -654,6 +704,10 @@
       searchTokenList: document.getElementById("searchTokenList"),
       searchSuggestions: document.getElementById("searchSuggestions"),
       clearButton: document.getElementById("clearButton"),
+      resultsContainer: document.getElementById("resultsContainer"),
+      resultsTabs: document.getElementById("resultsTabs"),
+      containsTabButton: document.getElementById("containsTabButton"),
+      safeTabButton: document.getElementById("safeTabButton"),
       containsDishesPanel: document.getElementById("containsDishesPanel"),
       safeDishesPanel: document.getElementById("safeDishesPanel"),
       selectedAllergiesSummary: document.getElementById("selectedAllergiesSummary"),
@@ -1188,6 +1242,7 @@
       state.selectedIngredient = selectedIngredient;
       state.selectedAllergy = selectedAllergy;
       state.selectedDish = selectedDish;
+      refs.resultsContainer.classList.toggle("menu-item-filter", state.mode === "dish");
 
       const dishToAllergens = new Map();
       const dishToIngredients = new Map();
@@ -1235,9 +1290,15 @@
       }
 
       const hasActiveQuery = state.mode === "dish" ? Boolean(selectedDish) : activeFilters.length > 0;
+      const canToggleResultTabs = state.mode !== "dish" && (hasAllergyFilters || hasIngredientFilters);
+      if (!canToggleResultTabs) state.resultsTab = "contains";
 
-      refs.containsDishesPanel.hidden = !hasActiveQuery;
-      refs.safeDishesPanel.hidden = !(hasAllergyFilters || hasIngredientFilters);
+      refs.resultsTabs.hidden = !canToggleResultTabs;
+      refs.containsTabButton.classList.toggle("active", state.resultsTab === "contains");
+      refs.safeTabButton.classList.toggle("active", state.resultsTab === "safe");
+
+      refs.containsDishesPanel.hidden = !hasActiveQuery || (canToggleResultTabs && state.resultsTab !== "contains");
+      refs.safeDishesPanel.hidden = !(hasAllergyFilters || hasIngredientFilters) || (canToggleResultTabs && state.resultsTab !== "safe");
       refs.printSafeButton.disabled = state.currentSafeDishes.length === 0;
       refs.dishAllergensPanel.hidden = true;
       refs.dishIngredientsPanel.hidden = true;
@@ -1281,6 +1342,14 @@
     refs.modeDishButton.addEventListener("click", () => setMode("dish"));
     refs.modeIngredientButton.addEventListener("click", () => setMode("ingredient"));
     refs.modeAllergyButton.addEventListener("click", () => setMode("allergy"));
+    refs.containsTabButton.addEventListener("click", () => {
+      state.resultsTab = "contains";
+      updateResults();
+    });
+    refs.safeTabButton.addEventListener("click", () => {
+      state.resultsTab = "safe";
+      updateResults();
+    });
     refs.quickSearch.addEventListener("input", (event) => renderSearchSuggestions(event.target.value));
     refs.quickSearch.addEventListener("keydown", (event) => {
       if (event.key === "Backspace" && !refs.quickSearch.value && state.searchTokens.length) {
@@ -1319,6 +1388,8 @@
       refs.searchSuggestions.hidden = true;
       refs.selectedAllergiesSummary.hidden = true;
       refs.selectedAllergiesSummary.textContent = "";
+      state.resultsTab = "contains";
+      refs.resultsTabs.hidden = true;
       refs.safeDishesPanel.hidden = true;
       state.currentSafeDishes = [];
       state.currentSafePrintTitle = "Safe menu items";
