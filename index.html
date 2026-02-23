@@ -8,16 +8,16 @@
   <style>
     :root {
       color-scheme: light;
-      --bg: radial-gradient(circle at 10% 10%, #ffe4f2 0%, #eef3fb 40%, #e6fff6 100%);
+      --bg: #f5f7fb;
       --panel: #ffffff;
-      --ink: #1d2433;
-      --muted: #4f5d78;
-      --accent: #1f5fe0;
-      --accent-soft: #e9f0ff;
-      --ok: #15763d;
-      --danger: #bd2424;
-      --border: #d2dced;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --ink: #1f2937;
+      --muted: #5f6b7a;
+      --accent: #6750a4;
+      --accent-soft: #efe8ff;
+      --ok: #0b7a43;
+      --danger: #b3261e;
+      --border: #d9dce3;
+      font-family: "Google Sans", "Roboto", "Noto Sans", "Helvetica Neue", Arial, sans-serif;
     }
 
     * { box-sizing: border-box; }
@@ -48,11 +48,11 @@
 
     .card {
       margin-top: 22px;
-      background: linear-gradient(145deg, #ffffff 0%, #f7f9ff 100%);
-      border: 1px solid #c8d6f6;
-      border-radius: 22px;
-      padding: 22px;
-      box-shadow: 0 14px 36px rgba(31, 95, 224, 0.13);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     .workspace {
@@ -87,7 +87,7 @@
       min-height: 64px;
       width: 100%;
       border-radius: 14px;
-      border: 2px solid var(--border);
+      border: 1px solid var(--border);
       padding: 8px;
       display: flex;
       flex-wrap: wrap;
@@ -210,14 +210,15 @@
 
     .geo-banner {
       text-align: center;
-      font-weight: 800;
-      color: #fff700;
-      text-shadow: 2px 2px 0 #ff00d4;
-      background: #12006e;
-      border: 3px dashed #00f7ff;
-      padding: 8px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #6750a4, #7a61bd);
+      border: none;
+      border-radius: 16px;
+      padding: 12px;
       margin-bottom: 10px;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
+      box-shadow: 0 2px 6px rgba(103, 80, 164, 0.35);
     }
     .mode-grid {
       display: grid;
@@ -231,42 +232,40 @@
       min-height: 74px;
       width: 100%;
       font-size: 1.15rem;
-      border-radius: 16px;
-      border: 2px solid #bdd0ff;
+      border-radius: 14px;
+      border: 1px solid var(--border);
       background: var(--accent-soft);
-      color: var(--accent);
+      color: #111;
       font-weight: 800;
     }
 
     #modeDishButton,
     #modeIngredientButton {
-      background: #e9f4ff;
-      color: #0b55b3;
-      border-color: #b9d9ff;
+      background: #e8f0fe;
+      color: #1a73e8;
+      border-color: #c6dafc;
     }
 
     #modeAllergyButton {
-      background: #ffe6e6;
-      color: #a11f1f;
-      border-color: #ffb5b5;
+      background: #fce8e6;
+      color: #b3261e;
+      border-color: #f3c2be;
     }
 
     .mode-button.active {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
-    }
-
-    #modeAllergyButton.active {
-      background: #bd2424;
-      border-color: #bd2424;
       color: #fff;
     }
 
     #modeDishButton.active,
     #modeIngredientButton.active {
-      background: #1b5abf;
-      border-color: #1b5abf;
+      background: #1a73e8;
+      border-color: #1a73e8;
+      color: #fff;
+    }
+
+    #modeAllergyButton.active {
+      background: #b3261e;
+      border-color: #b3261e;
       color: #fff;
     }
 
@@ -286,8 +285,8 @@
       width: 100%;
       max-width: 100%;
       font-size: 1.2rem;
-      border-radius: 16px;
-      border: 2px solid var(--border);
+      border-radius: 14px;
+      border: 1px solid var(--border);
       padding: 0 16px;
       background: #fff;
       color: var(--ink);
@@ -300,7 +299,7 @@
 
     button {
       background: var(--accent-soft);
-      color: var(--accent);
+      color: #111;
       border-color: #bdd0ff;
       font-weight: 800;
       cursor: pointer;
@@ -308,7 +307,7 @@
     }
 
     select:focus-visible, button:focus-visible {
-      outline: 4px solid #9ec0ff;
+      outline: 3px solid #6750a4;
       outline-offset: 2px;
     }
 
@@ -326,7 +325,7 @@
       padding: 4px 8px;
       border: none;
       background: transparent;
-      color: var(--accent);
+      color: #111;
       text-decoration: underline;
       font-size: 1.1rem;
       font-weight: 700;
@@ -343,25 +342,30 @@
       grid-template-columns: minmax(0, 1fr);
       grid-template-areas:
         "contains"
+        "safe"
         "allergens"
         "ingredients";
       gap: 16px;
       margin-top: 16px;
       min-width: 0;
     }
+    .result.contains{
+		border:1px solid #bf0000;
+    }
 
     .result {
-      border-radius: 18px;
-      padding: 18px;
-      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
       min-height: 230px;
-      background: #fff;
-      backdrop-filter: blur(1px);
+      background: #db9e9e;
+      box-shadow: none;
       max-width: 100%;
       overflow-wrap: anywhere;
     }
 
     #containsDishesPanel { grid-area: contains; }
+    #safeDishesPanel { grid-area: safe; }
     #dishAllergensPanel { grid-area: allergens; }
     #dishIngredientsPanel { grid-area: ingredients; }
 
@@ -372,27 +376,74 @@
     }
     .selected-allergies-summary {
       margin: 0 0 12px;
-      font-weight: 700;
-      color: var(--danger);
+      font-weight: 800;
+      color: #530202;
+      font-size: 1.3rem;
+      line-height: 1.2;
     }
 
 
-    .contains h2 { color: var(--danger); }
-    .safe h2 { color: var(--ok); }
+    .contains h2 { color: #bd2424; }
+    .safe h2 { color: #15763d; }
+
+    .panel-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .print-safe-button {
+      min-height: auto;
+      width: auto;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+
+    .print-safe-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #safeDishesPanel {
+      border-color: transparent;
+      border-width: 0;
+      background: transparent;
+      box-shadow: none;
+      margin-top:15px;
+    }
+
+    #safeDishesPanel.result {
+    	padding:0;
+    }
+
+    #safePanelTitle {
+      color: #000;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    #safePanelTitle .menu-item-allergens {
+    	    font-size: 0.9rem;
+    }
 
     #dishAllergensPanel {
-      border-color: #ffb3b3;
-      background: linear-gradient(180deg, #fff5f5 0%, #ffe6e6 100%);
-      box-shadow: 0 10px 24px rgba(189, 36, 36, 0.17);
+      border-color: #f4c0bc;
+      background: #fff3f2;
     }
 
     #dishAllergensPanel h2 {
       display: inline-block;
       background: #bd2424;
       color: #fff;
-      padding: 6px 10px;
-      border-radius: 10px;
-      letter-spacing: 0.02em;
+      padding: 4px 8px;
+      border-radius: 14px;
+      letter-spacing: 0.01em;
     }
 
     ul {
@@ -409,9 +460,11 @@
 
     .menu-item-match {
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 10px 12px;
       margin-bottom: 10px;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     }
 
     .menu-item-name {
@@ -427,7 +480,7 @@
     }
 
     .menu-item-allergens {
-      color: var(--danger);
+      color: #a14c4c;
       font-weight: 800;
     }
 
@@ -457,7 +510,7 @@
         grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.05fr);
         gap: 14px;
       }
-      .card { padding: 16px; border-radius: 16px; }
+      .card { padding: 16px; border-radius: 14px; }
       select, button { min-height: 64px; font-size: 1.05rem; }
       label { font-size: 1.05rem; }
       .result h2 { font-size: 1.15rem; }
@@ -470,7 +523,7 @@
     @media (max-width: 700px) {
       .page { padding: 20px 14px 34px; }
       .workspace { grid-template-columns: 1fr; }
-      .card { padding: 16px; border-radius: 16px; }
+      .card { padding: 16px; border-radius: 14px; }
       select, button { min-height: 64px; font-size: 1.05rem; }
       label { font-size: 1.05rem; }
       .result h2 { font-size: 1.15rem; }
@@ -496,7 +549,7 @@
     <div class="workspace">
     <section class="card">
       <div class="search-wrap">
-        <label for="quickSearch">Quick search (dish, ingredient, or allergen)</label>
+        <label for="quickSearch">Quick search (menu item, ingredient, or allergen)</label>
         <div class="search-token-input" id="searchTokenInput">
           <div id="searchTokenList"></div>
           <input id="quickSearch" class="search-input" type="text" placeholder="Type to search and add filter tokens…" autocomplete="off" />
@@ -508,9 +561,9 @@
 
       <p class="mode-label"><span class="flat-icon">▣</span> Filter options</p>
       <div class="mode-grid">
-        <button id="modeDishButton" class="mode-button" type="button"><span class="flat-icon">◻</span> Menu Item</button>
-        <button id="modeIngredientButton" class="mode-button" type="button"><span class="flat-icon">◻</span> Ingredient</button>
-        <button id="modeAllergyButton" class="mode-button" type="button"><span class="flat-icon">◻</span> Allergy</button>
+        <button id="modeDishButton" class="mode-button" type="button">Menu Item</button>
+        <button id="modeIngredientButton" class="mode-button" type="button">Ingredient</button>
+        <button id="modeAllergyButton" class="mode-button" type="button">Allergen</button>
       </div>
 
       <div class="filters">
@@ -522,16 +575,16 @@
           <p class="select-help">Tap to select one or more ingredients.</p>
         </div>
         <div id="allergyFilterGroup" class="filter-group" hidden>
-          <label for="allergySelect">Allergy</label>
+          <label for="allergySelect">Allergen</label>
           <select id="allergySelect" multiple>
-            <option value="">All allergies</option>
+            <option value="">All allergens</option>
           </select>
-          <p class="select-help">Tap to select one or more allergies.</p>
+          <p class="select-help">Tap to select one or more allergens.</p>
         </div>
         <div id="dishFilterGroup" class="filter-group" hidden>
           <label for="dishSelect">Menu item</label>
           <select id="dishSelect">
-            <option value="">All dishes</option>
+            <option value="">All menu items</option>
           </select>
         </div>
       </div>
@@ -545,16 +598,22 @@
 
     <section class="results">
       <article class="result contains" id="containsDishesPanel" hidden>
-        <h2><span class="flat-icon">◉</span> Matches</h2>
         <p id="selectedAllergiesSummary" class="selected-allergies-summary" hidden></p>
         <ul id="containsDishList"></ul>
       </article>
+      <article class="result safe" id="safeDishesPanel" hidden>
+        <div class="panel-title-row">
+          <h2 id="safePanelTitle">Safe menu items</h2>
+          <button id="printSafeButton" class="print-safe-button" type="button" aria-label="Print safe menu items list" title="Print safe menu items">🖨</button>
+        </div>
+        <ul id="safeDishList"></ul>
+      </article>
       <article class="result contains" id="dishAllergensPanel" hidden>
-        <h2><span class="flat-icon">◉</span> Allergens in selected dish</h2>
+        <h2><span class="flat-icon">◉</span> Allergens in selected menu item</h2>
         <ul id="dishAllergenList"></ul>
       </article>
       <article class="result safe" id="dishIngredientsPanel" hidden>
-        <h2><span class="flat-icon">◉</span> All ingredients in selected dish</h2>
+        <h2><span class="flat-icon">◉</span> All ingredients in selected menu item</h2>
         <ul id="dishIngredientList"></ul>
       </article>
     </section>
@@ -575,7 +634,9 @@
       selectedIngredient: [],
       selectedAllergy: [],
       selectedDish: "",
-      searchTokens: []
+      searchTokens: [],
+      currentSafeDishes: [],
+      currentSafePrintTitle: "Safe menu items"
     };
 
     const refs = {
@@ -594,10 +655,14 @@
       searchSuggestions: document.getElementById("searchSuggestions"),
       clearButton: document.getElementById("clearButton"),
       containsDishesPanel: document.getElementById("containsDishesPanel"),
+      safeDishesPanel: document.getElementById("safeDishesPanel"),
       selectedAllergiesSummary: document.getElementById("selectedAllergiesSummary"),
       dishAllergensPanel: document.getElementById("dishAllergensPanel"),
       dishIngredientsPanel: document.getElementById("dishIngredientsPanel"),
       containsDishList: document.getElementById("containsDishList"),
+      safeDishList: document.getElementById("safeDishList"),
+      safePanelTitle: document.getElementById("safePanelTitle"),
+      printSafeButton: document.getElementById("printSafeButton"),
       dishAllergenList: document.getElementById("dishAllergenList"),
       dishIngredientList: document.getElementById("dishIngredientList"),
       loadingIndicator: document.getElementById("loadingIndicator"),
@@ -612,6 +677,27 @@
 
     function canonicalKey(str) {
       return normalize(str).toLowerCase().replace(/\s+/g, " ");
+    }
+
+    function toSentenceCase(str) {
+      const text = normalize(str).replace(/\s+/g, " ");
+      if (!text) return "";
+      const lower = text.toLowerCase();
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    }
+
+    function toCapitalizedCase(str) {
+      return normalize(str)
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .filter(Boolean)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    }
+
+    function compareAlpha(a, b) {
+      return normalize(a).localeCompare(normalize(b), undefined, { sensitivity: "base" });
     }
 
     function deduplicateRows(rows) {
@@ -630,9 +716,9 @@
       };
 
       for (const row of rows) {
-        const rawDish = normalize(row.dish).replace(/\s+/g, " ");
-        const rawAllergen = normalize(row.allergen).replace(/\s+/g, " ");
-        const rawIngredient = normalize(row.ingredient || row.allergen).replace(/\s+/g, " ");
+        const rawDish = toCapitalizedCase(row.dish);
+        const rawAllergen = toSentenceCase(row.allergen);
+        const rawIngredient = toSentenceCase(row.ingredient || row.allergen);
         const normalizedAllergen = rawAllergen || rawIngredient;
         if (!rawDish || !rawIngredient) continue;
 
@@ -687,6 +773,7 @@
 
       const matches = state.searchIndex
         .filter(item => item.value.toLowerCase().includes(q))
+        .sort((a, b) => compareAlpha(a.value, b.value))
         .slice(0, 10);
 
       if (!matches.length) {
@@ -804,7 +891,9 @@
         return;
       }
 
-      for (const dish of dishes) {
+      const sortedDishes = [...dishes].sort(compareAlpha);
+
+      for (const dish of sortedDishes) {
         const li = document.createElement("li");
         li.className = "menu-item-match";
 
@@ -812,8 +901,8 @@
         name.className = "menu-item-name";
         name.textContent = dish;
 
-        const ingredients = [...(dishToIngredients.get(dish) || [])].sort((a, b) => a.localeCompare(b));
-        const allergens = [...(dishToAllergens.get(dish) || [])].sort((a, b) => a.localeCompare(b));
+        const ingredients = [...(dishToIngredients.get(dish) || [])].sort(compareAlpha);
+        const allergens = [...(dishToAllergens.get(dish) || [])].sort(compareAlpha);
 
         const meta = document.createElement("div");
         meta.className = "menu-item-meta";
@@ -974,7 +1063,7 @@
       }
 
       if (parsedRows.length) return parsedRows;
-      throw new Error(`No usable dish/ingredient/allergen rows found in columns A-C from ${sourceLabel}`);
+      throw new Error(`No usable menu item/ingredient/allergen rows found in columns A-C from ${sourceLabel}`);
     }
 
     async function loadSheetData() {
@@ -1001,17 +1090,17 @@
         }
 
         rows = deduplicateRows(rows);
-        if (!rows.length) throw new Error("No dish/ingredient rows found in sheet");
+        if (!rows.length) throw new Error("No menu item/ingredient rows found in sheet");
 
         state.rows = rows;
-        state.dishes = [...new Set(rows.map(r => r.dish))].sort((a, b) => a.localeCompare(b));
-        state.allergens = [...new Set(rows.map(r => r.allergen))].sort((a, b) => a.localeCompare(b));
-        state.ingredients = [...new Set(rows.map(r => r.ingredient || r.allergen))].sort((a, b) => a.localeCompare(b));
+        state.dishes = [...new Set(rows.map(r => r.dish))].sort(compareAlpha);
+        state.allergens = [...new Set(rows.map(r => r.allergen))].sort(compareAlpha);
+        state.ingredients = [...new Set(rows.map(r => r.ingredient || r.allergen))].sort(compareAlpha);
         buildSearchIndex();
 
-        populateSelect(refs.dishSelect, state.dishes, "All dishes", state.selectedDish);
+        populateSelect(refs.dishSelect, state.dishes, "All menu items", state.selectedDish);
         populateSelect(refs.ingredientSelect, state.ingredients, "All ingredients", state.selectedIngredient);
-        populateSelect(refs.allergySelect, state.allergens, "All allergies", state.selectedAllergy);
+        populateSelect(refs.allergySelect, state.allergens, "All allergens", state.selectedAllergy);
 
         refs.sheetStatus.textContent = `Loaded ${state.rows.length} unique records from sheet • Updated ${new Date().toLocaleTimeString()}`;
         updateResults();
@@ -1046,6 +1135,48 @@
       }
     }
 
+    function printSafeDishes() {
+      const dishes = state.currentSafeDishes || [];
+      if (!dishes.length) return;
+
+      const printableTitle = state.currentSafePrintTitle || "Safe menu items";
+      const printableHtml = `<!doctype html><html><head><meta charset="utf-8"><title>${printableTitle}</title>
+      <style>
+      @page { margin: 16mm; }
+      body{font-family:"Google Sans","Roboto","Noto Sans",Arial,sans-serif;padding:0;color:#1f2937}
+      h1{margin:0 0 12px;font-size:22px}
+      ul{margin:0;padding-left:20px;line-height:1.6}
+      .print-disclaimer{margin-top:18px;font-size:12px;line-height:1.45;color:#4b5563}
+      </style>
+      </head><body><h1>${printableTitle}</h1><ul>${dishes.map(d => `<li>${d}</li>`).join("")}</ul><p class="print-disclaimer">Disclaimer: We do our best to ensure menu items are safe, but we cannot guarantee 100% protection against cross-contamination.</p></body></html>`;
+
+      const frame = document.createElement("iframe");
+      frame.style.position = "fixed";
+      frame.style.right = "0";
+      frame.style.bottom = "0";
+      frame.style.width = "0";
+      frame.style.height = "0";
+      frame.style.border = "0";
+      frame.setAttribute("aria-hidden", "true");
+      document.body.appendChild(frame);
+
+      const frameDoc = frame.contentWindow?.document;
+      if (!frameDoc || !frame.contentWindow) {
+        frame.remove();
+        return;
+      }
+
+      frameDoc.open();
+      frameDoc.write(printableHtml);
+      frameDoc.close();
+
+      frame.onload = () => {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+        window.setTimeout(() => frame.remove(), 1000);
+      };
+    }
+
     function getSelectedValues(selectElement) {
       return Array.from(selectElement.selectedOptions).map(option => option.value).filter(Boolean);
     }
@@ -1067,24 +1198,56 @@
       });
 
       const activeFilters = [...selectedIngredient, ...selectedAllergy];
+      const hasAllergyFilters = state.mode === "allergy" && selectedAllergy.length > 0;
+      const hasIngredientFilters = state.mode === "ingredient" && selectedIngredient.length > 0;
+
       const containsDishes = state.mode === "dish"
         ? (selectedDish ? [selectedDish] : [])
         : activeFilters.length
           ? state.dishes.filter(dish => {
-              const ingredients = [...(dishToIngredients.get(dish) || [])];
-              return ingredients.some(value => activeFilters.some(filter => value.toLowerCase().includes(filter.toLowerCase())));
+              const values = state.mode === "allergy"
+                ? [...(dishToAllergens.get(dish) || [])]
+                : [...(dishToIngredients.get(dish) || [])];
+              return values.some(value => activeFilters.some(filter => value.toLowerCase().includes(filter.toLowerCase())));
             })
           : [];
+
+      const safeDishes = (hasAllergyFilters || hasIngredientFilters)
+        ? state.dishes.filter(dish => {
+            const values = hasAllergyFilters
+              ? [...(dishToAllergens.get(dish) || [])]
+              : [...(dishToIngredients.get(dish) || [])];
+            const filters = hasAllergyFilters ? selectedAllergy : selectedIngredient;
+            return !values.some(value => filters.some(filter => value.toLowerCase().includes(filter.toLowerCase())));
+          })
+        : [];
+      state.currentSafeDishes = [...safeDishes].sort(compareAlpha);
+
+      if (hasAllergyFilters) {
+        refs.safePanelTitle.textContent = "Safe menu items";
+        state.currentSafePrintTitle = `Menu items free from ${selectedAllergy.join(", ")}`;
+      } else if (hasIngredientFilters) {
+        refs.safePanelTitle.textContent = "Menu items without selected ingredient";
+        state.currentSafePrintTitle = `Menu items without ${selectedIngredient.join(", ")}`;
+      } else {
+        refs.safePanelTitle.textContent = "Safe menu items";
+        state.currentSafePrintTitle = "Safe menu items";
+      }
 
       const hasActiveQuery = state.mode === "dish" ? Boolean(selectedDish) : activeFilters.length > 0;
 
       refs.containsDishesPanel.hidden = !hasActiveQuery;
+      refs.safeDishesPanel.hidden = !(hasAllergyFilters || hasIngredientFilters);
+      refs.printSafeButton.disabled = state.currentSafeDishes.length === 0;
       refs.dishAllergensPanel.hidden = true;
       refs.dishIngredientsPanel.hidden = true;
 
-      if (state.mode === "allergy" && selectedAllergy.length) {
+      if (hasAllergyFilters) {
         refs.selectedAllergiesSummary.hidden = false;
-        refs.selectedAllergiesSummary.textContent = `Selected allergies: ${selectedAllergy.join(", ")}`;
+        refs.selectedAllergiesSummary.textContent = `Allergens: ${selectedAllergy.join(", ")}`;
+      } else if (hasIngredientFilters) {
+        refs.selectedAllergiesSummary.hidden = false;
+        refs.selectedAllergiesSummary.textContent = `Menu Items Containing ${selectedIngredient.join(", ")}`;
       } else {
         refs.selectedAllergiesSummary.hidden = true;
         refs.selectedAllergiesSummary.textContent = "";
@@ -1097,7 +1260,15 @@
         dishToAllergens,
         state.mode === "dish"
           ? "Choose a menu item to see its details."
-          : "Choose one or more ingredients/allergies to see matching menu items."
+          : "Choose one or more ingredients/allergens to see matching menu items."
+      );
+
+      renderMenuItemCards(
+        refs.safeDishList,
+        state.currentSafeDishes,
+        dishToIngredients,
+        dishToAllergens,
+        hasAllergyFilters ? "No safe menu items for the selected allergens." : hasIngredientFilters ? "No menu items were found outside the selected ingredients." : "Choose one or more allergens or ingredients to see safe menu items."
       );
 
       refs.dishAllergenList.innerHTML = "";
@@ -1130,6 +1301,7 @@
       if (!target) return;
       applySearchSelection(target.dataset.type, target.dataset.value);
     });
+    refs.printSafeButton.addEventListener("click", printSafeDishes);
     refs.clearButton.addEventListener("click", () => {
       state.mode = "";
       refs.modeDishButton.classList.remove("active");
@@ -1147,9 +1319,15 @@
       refs.searchSuggestions.hidden = true;
       refs.selectedAllergiesSummary.hidden = true;
       refs.selectedAllergiesSummary.textContent = "";
+      refs.safeDishesPanel.hidden = true;
+      state.currentSafeDishes = [];
+      state.currentSafePrintTitle = "Safe menu items";
+      refs.safePanelTitle.textContent = "Safe menu items";
+      refs.printSafeButton.disabled = true;
       updateResults();
     });
 
+    refs.printSafeButton.disabled = true;
     renderSearchTokens();
     loadSheetData();
   </script>
