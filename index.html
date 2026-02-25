@@ -914,7 +914,7 @@
           button.addEventListener("click", () => {
             refs.dishSelect.value = dish;
             state.selectedDish = dish;
-            clearQuickSearchFilters();
+            clearQuickSearchField(true);
             updateResults();
           });
           listWrap.appendChild(button);
