@@ -1361,15 +1361,23 @@
         return;
       }
 
-      frameDoc.open();
-      frameDoc.write(printableHtml);
-      frameDoc.close();
-
-      frame.onload = () => {
+      const triggerPrint = () => {
+        if (!frame.contentWindow) {
+          frame.remove();
+          return;
+        }
         frame.contentWindow.focus();
         frame.contentWindow.print();
         window.setTimeout(() => frame.remove(), 1000);
       };
+
+      frame.onload = triggerPrint;
+      frameDoc.open();
+      frameDoc.write(printableHtml);
+      frameDoc.close();
+      if (frameDoc.readyState === "complete") {
+        triggerPrint();
+      }
     }
 
     function getSelectedValues(selectElement) {
