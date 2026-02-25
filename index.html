@@ -132,9 +132,9 @@
 
     .search-token.ingredient,
     .chip-type.ingredient {
-      background: #eaf5ff;
-      color: #155799;
-      border-color: #c7e1ff;
+      background: #e7f8ea;
+      color: #1d6b2a;
+      border-color: #bfe8c7;
     }
 
     .search-token.allergen,
@@ -239,11 +239,16 @@
       font-weight: 800;
     }
 
-    #modeDishButton,
-    #modeIngredientButton {
+    #modeDishButton {
       background: #e8f0fe;
       color: #1a73e8;
       border-color: #c6dafc;
+    }
+
+    #modeIngredientButton {
+      background: #e7f8ea;
+      color: #1d6b2a;
+      border-color: #bfe8c7;
     }
 
     #modeAllergyButton {
@@ -256,10 +261,15 @@
       color: #fff;
     }
 
-    #modeDishButton.active,
-    #modeIngredientButton.active {
+    #modeDishButton.active {
       background: #1a73e8;
       border-color: #1a73e8;
+      color: #fff;
+    }
+
+    #modeIngredientButton.active {
+      background: #1f8f3a;
+      border-color: #1f8f3a;
       color: #fff;
     }
 
@@ -509,6 +519,58 @@
       line-height: 1.45;
     }
 
+    .menu-category-accordion {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .menu-category {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .menu-category summary {
+      cursor: pointer;
+      list-style: none;
+      font-weight: 800;
+      padding: 10px 12px;
+      background: #f6f8fd;
+    }
+
+    .menu-category summary::-webkit-details-marker { display: none; }
+
+    .menu-category-items {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid #edf1fb;
+    }
+
+    .menu-item-option {
+      width: 100%;
+      text-align: left;
+      min-height: auto;
+      border: 1px solid #dce6fb;
+      background: #f9fbff;
+      color: #1f3e74;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 1rem;
+    }
+
+    .menu-item-option.active {
+      background: #1a73e8;
+      border-color: #1a73e8;
+      color: #fff;
+    }
+
+    #dishFilterGroup select {
+      display: none;
+    }
+
     .menu-item-allergens {
       color: #a14c4c;
       font-weight: 800;
@@ -627,6 +689,7 @@
           <select id="dishSelect">
             <option value="">All menu items</option>
           </select>
+          <div id="dishCategoryAccordion" class="menu-category-accordion" aria-live="polite"></div>
         </div>
       </div>
       <div class="button-grid">
@@ -675,6 +738,8 @@
       dishes: [],
       allergens: [],
       ingredients: [],
+      categories: [],
+      dishToCategory: new Map(),
       searchIndex: [],
       mode: "",
       selectedIngredient: [],
@@ -696,6 +761,7 @@
       ingredientSelect: document.getElementById("ingredientSelect"),
       allergySelect: document.getElementById("allergySelect"),
       dishSelect: document.getElementById("dishSelect"),
+      dishCategoryAccordion: document.getElementById("dishCategoryAccordion"),
       quickSearch: document.getElementById("quickSearch"),
       searchTokenInput: document.getElementById("searchTokenInput"),
       searchTokenList: document.getElementById("searchTokenList"),
@@ -758,6 +824,7 @@
 
     function deduplicateRows(rows) {
       const dishLabels = new Map();
+      const categoryLabels = new Map();
       const allergenLabels = new Map();
       const ingredientLabels = new Map();
       const pairKeys = [];
@@ -773,6 +840,7 @@
 
       for (const row of rows) {
         const rawDish = toCapitalizedCase(row.dish);
+        const rawCategory = toCapitalizedCase(row.category || "Uncategorized") || "Uncategorized";
         const rawAllergen = toSentenceCase(row.allergen);
         const rawIngredient = toSentenceCase(row.ingredient || row.allergen);
         const normalizedAllergen = rawAllergen || rawIngredient;
@@ -784,6 +852,7 @@
         if (!dishKey || !ingredientKey) continue;
 
         dishLabels.set(dishKey, choosePreferredLabel(dishLabels.get(dishKey), rawDish));
+        categoryLabels.set(dishKey, choosePreferredLabel(categoryLabels.get(dishKey), rawCategory));
         allergenLabels.set(allergenKey, choosePreferredLabel(allergenLabels.get(allergenKey), normalizedAllergen));
         if (ingredientKey) ingredientLabels.set(ingredientKey, choosePreferredLabel(ingredientLabels.get(ingredientKey), rawIngredient || rawAllergen));
 
@@ -796,6 +865,7 @@
 
       return pairKeys.map(([dishKey, allergenKey, ingredientKey]) => ({
         dish: dishLabels.get(dishKey),
+        category: categoryLabels.get(dishKey) || "Uncategorized",
         allergen: allergenLabels.get(allergenKey),
         ingredient: ingredientLabels.get(ingredientKey) || allergenLabels.get(allergenKey)
       }));
@@ -809,6 +879,65 @@
     function setError(message = "") {
       refs.errorMessage.hidden = !message;
       refs.errorMessage.textContent = message;
+    }
+
+    function buildCategoryAccordion() {
+      refs.dishCategoryAccordion.innerHTML = "";
+
+      const categoryMap = new Map();
+      state.categories.forEach(category => categoryMap.set(category, []));
+
+      state.dishes.forEach(dish => {
+        const category = state.dishToCategory.get(dish) || "Uncategorized";
+        if (!categoryMap.has(category)) categoryMap.set(category, []);
+        categoryMap.get(category).push(dish);
+      });
+
+      for (const [category, dishes] of categoryMap.entries()) {
+        const details = document.createElement("details");
+        details.className = "menu-category";
+
+        const summary = document.createElement("summary");
+        summary.textContent = `${category} (${dishes.length})`;
+        details.appendChild(summary);
+
+        const listWrap = document.createElement("div");
+        listWrap.className = "menu-category-items";
+
+        sortAlphabetically(dishes).forEach(dish => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "menu-item-option";
+          button.dataset.dish = dish;
+          button.textContent = dish;
+          button.addEventListener("click", () => {
+            refs.dishSelect.value = dish;
+            state.selectedDish = dish;
+            state.searchTokens = state.searchTokens.filter(token => token.type !== "menu item");
+            refs.quickSearch.value = "";
+            refs.searchSuggestions.hidden = true;
+            renderSearchTokens();
+            updateResults();
+          });
+          listWrap.appendChild(button);
+        });
+
+        details.appendChild(listWrap);
+        refs.dishCategoryAccordion.appendChild(details);
+      }
+    }
+
+    function syncDishCategorySelection() {
+      const selectedDish = refs.dishSelect.value;
+      const optionButtons = refs.dishCategoryAccordion.querySelectorAll(".menu-item-option");
+      optionButtons.forEach(button => {
+        button.classList.toggle("active", button.dataset.dish === selectedDish);
+      });
+
+      if (!selectedDish) return;
+      const selectedButton = refs.dishCategoryAccordion.querySelector(`.menu-item-option[data-dish="${CSS.escape(selectedDish)}"]`);
+      const categoryContainer = selectedButton?.closest("details");
+      if (categoryContainer) categoryContainer.open = true;
     }
 
     function buildSearchIndex() {
@@ -874,39 +1003,19 @@
 
     function removeSearchToken(type, value) {
       state.searchTokens = state.searchTokens.filter(token => !(token.type === type && token.value === value));
-      if (type === "menu item") {
-        if (refs.dishSelect.value === value) refs.dishSelect.value = "";
-      } else if (type === "ingredient") {
-        const option = Array.from(refs.ingredientSelect.options).find(opt => opt.value === value);
-        if (option) option.selected = false;
-      } else {
-        const option = Array.from(refs.allergySelect.options).find(opt => opt.value === value);
-        if (option) option.selected = false;
-      }
       renderSearchTokens();
       updateResults();
     }
 
     function addSearchToken(type, value) {
-      if (type === "menu item") {
-        setMode("dish");
-        refs.dishSelect.value = value;
-        state.searchTokens = [{ type: "menu item", value }];
-      } else if (type === "ingredient") {
-        setMode("ingredient");
-        const option = Array.from(refs.ingredientSelect.options).find(opt => opt.value === value);
-        if (option) option.selected = true;
-        if (!state.searchTokens.some(token => token.type === "ingredient" && token.value === value)) {
-          state.searchTokens.push({ type: "ingredient", value });
-        }
-      } else {
-        setMode("allergy");
-        const option = Array.from(refs.allergySelect.options).find(opt => opt.value === value);
-        if (option) option.selected = true;
-        if (!state.searchTokens.some(token => token.type === "allergen" && token.value === value)) {
-          state.searchTokens.push({ type: "allergen", value });
-        }
+      const normalizedType = type === "allergen" ? "allergen" : type;
+      if (state.searchTokens.some(token => token.type === normalizedType && token.value === value)) {
+        refs.quickSearch.value = "";
+        refs.searchSuggestions.hidden = true;
+        return;
       }
+
+      state.searchTokens.push({ type: normalizedType, value });
       refs.quickSearch.value = "";
       refs.searchSuggestions.hidden = true;
       renderSearchTokens();
@@ -993,6 +1102,7 @@
       if (mode !== "dish") refs.dishSelect.value = "";
       if (mode !== "allergy") Array.from(refs.allergySelect.options).forEach(opt => { opt.selected = false; });
 
+      syncDishCategorySelection();
       updateResults();
     }
 
@@ -1088,6 +1198,7 @@
       const DISH_COL_INDEX = 0; // Column A
       const INGREDIENT_COL_INDEX = 1; // Column B
       const ALLERGEN_COL_INDEX = 2; // Column C
+      const CATEGORY_COL_INDEX = 3; // Column D
       const splitValues = (value) => normalize(value)
         .split(/[;,|]/)
         .map(v => normalize(v))
@@ -1098,6 +1209,7 @@
 
       for (const cells of dataRows) {
         const dish = normalize(cells[DISH_COL_INDEX]);
+        const category = normalize(cells[CATEGORY_COL_INDEX]) || "Uncategorized";
         const ingredientTokens = splitValues(cells[INGREDIENT_COL_INDEX]);
         const allergenTokens = splitValues(cells[ALLERGEN_COL_INDEX]);
         if (!dish) continue;
@@ -1111,6 +1223,7 @@
           for (const allergen of allergens) {
             parsedRows.push({
               dish,
+              category,
               ingredient: ingredient || allergen,
               allergen: allergen || ingredient
             });
@@ -1119,7 +1232,7 @@
       }
 
       if (parsedRows.length) return parsedRows;
-      throw new Error(`No usable menu item/ingredient/allergen rows found in columns A-C from ${sourceLabel}`);
+      throw new Error(`No usable menu item/ingredient/allergen rows found in columns A-D from ${sourceLabel}`);
     }
 
     async function loadSheetData() {
@@ -1152,7 +1265,15 @@
         state.dishes = [...new Set(rows.map(r => r.dish))].sort(compareAlpha);
         state.allergens = [...new Set(rows.map(r => r.allergen))].sort(compareAlpha);
         state.ingredients = [...new Set(rows.map(r => r.ingredient || r.allergen))].sort(compareAlpha);
+        state.categories = [...new Set(rows.map(r => r.category || "Uncategorized"))].sort(compareAlpha);
+        state.dishToCategory = new Map();
+        rows.forEach(row => {
+          if (!state.dishToCategory.has(row.dish)) {
+            state.dishToCategory.set(row.dish, row.category || "Uncategorized");
+          }
+        });
         buildSearchIndex();
+        buildCategoryAccordion();
 
         populateSelect(refs.dishSelect, state.dishes, "All menu items", state.selectedDish);
         populateSelect(refs.ingredientSelect, state.ingredients, "All ingredients", state.selectedIngredient);
@@ -1222,15 +1343,23 @@
         return;
       }
 
-      frameDoc.open();
-      frameDoc.write(printableHtml);
-      frameDoc.close();
-
-      frame.onload = () => {
+      const triggerPrint = () => {
+        if (!frame.contentWindow) {
+          frame.remove();
+          return;
+        }
         frame.contentWindow.focus();
         frame.contentWindow.print();
         window.setTimeout(() => frame.remove(), 1000);
       };
+
+      frame.onload = triggerPrint;
+      frameDoc.open();
+      frameDoc.write(printableHtml);
+      frameDoc.close();
+      if (frameDoc.readyState === "complete") {
+        triggerPrint();
+      }
     }
 
     function getSelectedValues(selectElement) {
@@ -1244,6 +1373,7 @@
       state.selectedIngredient = selectedIngredient;
       state.selectedAllergy = selectedAllergy;
       state.selectedDish = selectedDish;
+      syncDishCategorySelection();
       refs.resultsContainer.classList.toggle("menu-item-filter", state.mode === "dish");
 
       const dishToAllergens = new Map();
@@ -1254,45 +1384,57 @@
         dishToIngredients.get(dish)?.add(ingredient || allergen);
       });
 
-      const activeFilters = [...selectedIngredient, ...selectedAllergy];
-      const hasAllergyFilters = state.mode === "allergy" && selectedAllergy.length > 0;
-      const hasIngredientFilters = state.mode === "ingredient" && selectedIngredient.length > 0;
+      const tokenIngredients = state.searchTokens.filter(token => token.type === "ingredient").map(token => token.value);
+      const tokenAllergens = state.searchTokens.filter(token => token.type === "allergen").map(token => token.value);
+      const tokenMenuItems = state.searchTokens.filter(token => token.type === "menu item").map(token => token.value);
 
-      const containsDishes = state.mode === "dish"
-        ? (selectedDish ? [selectedDish] : [])
-        : activeFilters.length
+      const ingredientFilters = [...new Set([...selectedIngredient, ...tokenIngredients])];
+      const allergyFilters = [...new Set([...selectedAllergy, ...tokenAllergens])];
+      const menuItemFilters = [...new Set([...(selectedDish ? [selectedDish] : []), ...tokenMenuItems])];
+
+      const hasAllergyFilters = allergyFilters.length > 0;
+      const hasIngredientFilters = ingredientFilters.length > 0;
+      const hasMenuItemFilters = menuItemFilters.length > 0;
+
+      const matchesAnyFilter = (values, filters) => {
+        const lowerValues = values.map(value => value.toLowerCase());
+        return filters.some(filter => lowerValues.some(value => value.includes(filter.toLowerCase())));
+      };
+
+      const containsDishes = hasMenuItemFilters
+        ? state.dishes.filter(dish => menuItemFilters.some(filter => dish.toLowerCase() === filter.toLowerCase()))
+        : (hasAllergyFilters || hasIngredientFilters)
           ? state.dishes.filter(dish => {
-              const values = state.mode === "allergy"
-                ? [...(dishToAllergens.get(dish) || [])]
-                : [...(dishToIngredients.get(dish) || [])];
-              return values.some(value => activeFilters.some(filter => value.toLowerCase().includes(filter.toLowerCase())));
+              const allergens = [...(dishToAllergens.get(dish) || [])];
+              const ingredients = [...(dishToIngredients.get(dish) || [])];
+              const matchesAllergen = !hasAllergyFilters || matchesAnyFilter(allergens, allergyFilters);
+              const matchesIngredient = !hasIngredientFilters || matchesAnyFilter(ingredients, ingredientFilters);
+              return matchesAllergen && matchesIngredient;
             })
           : [];
 
       const safeDishes = (hasAllergyFilters || hasIngredientFilters)
         ? state.dishes.filter(dish => {
-            const values = hasAllergyFilters
-              ? [...(dishToAllergens.get(dish) || [])]
-              : [...(dishToIngredients.get(dish) || [])];
-            const filters = hasAllergyFilters ? selectedAllergy : selectedIngredient;
-            return !values.some(value => filters.some(filter => value.toLowerCase().includes(filter.toLowerCase())));
+            const allergens = [...(dishToAllergens.get(dish) || [])];
+            const ingredients = [...(dishToIngredients.get(dish) || [])];
+            const hasBlockedAllergen = hasAllergyFilters && matchesAnyFilter(allergens, allergyFilters);
+            const hasBlockedIngredient = hasIngredientFilters && matchesAnyFilter(ingredients, ingredientFilters);
+            return !(hasBlockedAllergen || hasBlockedIngredient);
           })
         : [];
       state.currentSafeDishes = [...safeDishes].sort(compareAlpha);
 
-      if (hasAllergyFilters) {
-        refs.safePanelTitle.textContent = "Safe menu items";
-        state.currentSafePrintTitle = `Menu items free from ${selectedAllergy.join(", ")}`;
-      } else if (hasIngredientFilters) {
-        refs.safePanelTitle.textContent = "Menu items without selected ingredient";
-        state.currentSafePrintTitle = `Menu items without ${selectedIngredient.join(", ")}`;
+      if (hasAllergyFilters || hasIngredientFilters) {
+        const filterLabel = [...allergyFilters, ...ingredientFilters].join(", ");
+        refs.safePanelTitle.textContent = `Menu Items not containing ${filterLabel}`;
+        state.currentSafePrintTitle = `Menu Items not containing ${filterLabel}`;
       } else {
         refs.safePanelTitle.textContent = "Safe menu items";
         state.currentSafePrintTitle = "Safe menu items";
       }
 
-      const hasActiveQuery = state.mode === "dish" ? Boolean(selectedDish) : activeFilters.length > 0;
-      const canToggleResultTabs = state.mode !== "dish" && (hasAllergyFilters || hasIngredientFilters);
+      const hasActiveQuery = hasMenuItemFilters || hasAllergyFilters || hasIngredientFilters;
+      const canToggleResultTabs = hasAllergyFilters || hasIngredientFilters;
       if (!canToggleResultTabs) state.resultsTab = "contains";
       refs.resultsPlaceholder.hidden = hasActiveQuery;
 
@@ -1308,10 +1450,10 @@
 
       if (hasAllergyFilters) {
         refs.selectedAllergiesSummary.hidden = false;
-        refs.selectedAllergiesSummary.textContent = `Allergens: ${selectedAllergy.join(", ")}`;
+        refs.selectedAllergiesSummary.textContent = `Allergens: ${allergyFilters.join(", ")}`;
       } else if (hasIngredientFilters) {
         refs.selectedAllergiesSummary.hidden = false;
-        refs.selectedAllergiesSummary.textContent = `Menu Items Containing ${selectedIngredient.join(", ")}`;
+        refs.selectedAllergiesSummary.textContent = `Menu Items Containing ${ingredientFilters.join(", ")}`;
       } else {
         refs.selectedAllergiesSummary.hidden = true;
         refs.selectedAllergiesSummary.textContent = "";
@@ -1322,8 +1464,8 @@
         containsDishes,
         dishToIngredients,
         dishToAllergens,
-        state.mode === "dish"
-          ? "Choose a menu item to see its details."
+        hasMenuItemFilters
+          ? "No menu items found for selected menu-item tokens."
           : "Choose one or more ingredients/allergens to see matching menu items."
       );
 
@@ -1332,7 +1474,7 @@
         state.currentSafeDishes,
         dishToIngredients,
         dishToAllergens,
-        hasAllergyFilters ? "No safe menu items for the selected allergens." : hasIngredientFilters ? "No menu items were found outside the selected ingredients." : "Choose one or more allergens or ingredients to see safe menu items."
+        hasAllergyFilters || hasIngredientFilters ? "No safe menu items for the selected filters." : "Choose one or more allergens or ingredients to see safe menu items."
       );
 
       refs.dishAllergenList.innerHTML = "";
@@ -1386,6 +1528,7 @@
       Array.from(refs.allergySelect.options).forEach(opt => { opt.selected = false; });
       refs.dishSelect.value = "";
       refs.quickSearch.value = "";
+      syncDishCategorySelection();
       state.searchTokens = [];
       renderSearchTokens();
       refs.searchSuggestions.hidden = true;
