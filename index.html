@@ -913,9 +913,7 @@
           button.addEventListener("click", () => {
             refs.dishSelect.value = dish;
             state.selectedDish = dish;
-            state.searchTokens = state.searchTokens.filter(token => token.type !== "menu item");
-            refs.quickSearch.value = "";
-            refs.searchSuggestions.hidden = true;
+            state.searchTokens = [{ type: "menu item", value: dish }];
             renderSearchTokens();
             updateResults();
           });
