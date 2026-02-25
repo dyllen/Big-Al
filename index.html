@@ -1018,7 +1018,7 @@
       if (type === "menu item") {
         setMode("dish");
         refs.dishSelect.value = value;
-        state.searchTokens = [{ type: "menu item", value }];
+        state.searchTokens = state.searchTokens.filter(token => token.type !== "menu item");
       } else if (type === "ingredient") {
         setMode("ingredient");
         const option = Array.from(refs.ingredientSelect.options).find(opt => opt.value === value);
@@ -1421,11 +1421,13 @@
       state.currentSafeDishes = [...safeDishes].sort(compareAlpha);
 
       if (hasAllergyFilters) {
-        refs.safePanelTitle.textContent = "Safe menu items";
-        state.currentSafePrintTitle = `Menu items free from ${selectedAllergy.join(", ")}`;
+        const filterLabel = selectedAllergy.join(", ");
+        refs.safePanelTitle.textContent = `Menu items not containing ${filterLabel}`;
+        state.currentSafePrintTitle = `Menu items not containing ${filterLabel}`;
       } else if (hasIngredientFilters) {
-        refs.safePanelTitle.textContent = "Menu items without selected ingredient";
-        state.currentSafePrintTitle = `Menu items without ${selectedIngredient.join(", ")}`;
+        const filterLabel = selectedIngredient.join(", ");
+        refs.safePanelTitle.textContent = `Menu items not containing ${filterLabel}`;
+        state.currentSafePrintTitle = `Menu items not containing ${filterLabel}`;
       } else {
         refs.safePanelTitle.textContent = "Safe menu items";
         state.currentSafePrintTitle = "Safe menu items";
