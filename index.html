@@ -913,7 +913,7 @@
           button.addEventListener("click", () => {
             refs.dishSelect.value = dish;
             state.selectedDish = dish;
-            state.searchTokens = state.searchTokens.filter(token => token.type !== "menu item");
+            state.searchTokens = [{ type: "menu item", value: dish }];
             renderSearchTokens();
             updateResults();
           });
