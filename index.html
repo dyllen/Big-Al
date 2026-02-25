@@ -913,9 +913,7 @@
           button.addEventListener("click", () => {
             refs.dishSelect.value = dish;
             state.selectedDish = dish;
-            state.searchTokens = state.searchTokens.filter(token => token.type !== "menu item");
-            refs.quickSearch.value = "";
-            refs.searchSuggestions.hidden = true;
+            state.searchTokens = [{ type: "menu item", value: dish }];
             renderSearchTokens();
             updateResults();
           });
@@ -1008,11 +1006,24 @@
     }
 
     function addSearchToken(type, value) {
-      const normalizedType = type === "allergen" ? "allergen" : type;
-      if (state.searchTokens.some(token => token.type === normalizedType && token.value === value)) {
-        refs.quickSearch.value = "";
-        refs.searchSuggestions.hidden = true;
-        return;
+      if (type === "menu item") {
+        setMode("dish");
+        refs.dishSelect.value = value;
+        state.searchTokens = state.searchTokens.filter(token => token.type !== "menu item");
+      } else if (type === "ingredient") {
+        setMode("ingredient");
+        const option = Array.from(refs.ingredientSelect.options).find(opt => opt.value === value);
+        if (option) option.selected = true;
+        if (!state.searchTokens.some(token => token.type === "ingredient" && token.value === value)) {
+          state.searchTokens.push({ type: "ingredient", value });
+        }
+      } else {
+        setMode("allergy");
+        const option = Array.from(refs.allergySelect.options).find(opt => opt.value === value);
+        if (option) option.selected = true;
+        if (!state.searchTokens.some(token => token.type === "allergen" && token.value === value)) {
+          state.searchTokens.push({ type: "allergen", value });
+        }
       }
 
       state.searchTokens.push({ type: normalizedType, value });
@@ -1424,8 +1435,12 @@
         : [];
       state.currentSafeDishes = [...safeDishes].sort(compareAlpha);
 
-      if (hasAllergyFilters || hasIngredientFilters) {
-        const filterLabel = [...allergyFilters, ...ingredientFilters].join(", ");
+      if (hasAllergyFilters) {
+        const filterLabel = selectedAllergy.join(", ");
+        refs.safePanelTitle.textContent = `Menu Items not containing ${filterLabel}`;
+        state.currentSafePrintTitle = `Menu Items not containing ${filterLabel}`;
+      } else if (hasIngredientFilters) {
+        const filterLabel = selectedIngredient.join(", ");
         refs.safePanelTitle.textContent = `Menu Items not containing ${filterLabel}`;
         state.currentSafePrintTitle = `Menu Items not containing ${filterLabel}`;
       } else {
