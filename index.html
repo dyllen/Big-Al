@@ -913,7 +913,9 @@
           button.addEventListener("click", () => {
             refs.dishSelect.value = dish;
             state.selectedDish = dish;
-            state.searchTokens = [{ type: "menu item", value: dish }];
+            state.searchTokens = state.searchTokens.filter(token => token.type !== "menu item");
+            refs.quickSearch.value = "";
+            refs.searchSuggestions.hidden = true;
             renderSearchTokens();
             updateResults();
           });
@@ -1001,6 +1003,15 @@
 
     function removeSearchToken(type, value) {
       state.searchTokens = state.searchTokens.filter(token => !(token.type === type && token.value === value));
+      if (type === "menu item") {
+        if (refs.dishSelect.value === value) refs.dishSelect.value = "";
+      } else if (type === "ingredient") {
+        const option = Array.from(refs.ingredientSelect.options).find(opt => opt.value === value);
+        if (option) option.selected = false;
+      } else {
+        const option = Array.from(refs.allergySelect.options).find(opt => opt.value === value);
+        if (option) option.selected = false;
+      }
       renderSearchTokens();
       updateResults();
     }
@@ -1010,6 +1021,7 @@
         setMode("dish");
         refs.dishSelect.value = value;
         state.searchTokens = state.searchTokens.filter(token => token.type !== "menu item");
+        state.searchTokens.push({ type: "menu item", value });
       } else if (type === "ingredient") {
         setMode("ingredient");
         const option = Array.from(refs.ingredientSelect.options).find(opt => opt.value === value);
@@ -1025,8 +1037,6 @@
           state.searchTokens.push({ type: "allergen", value });
         }
       }
-
-      state.searchTokens.push({ type: normalizedType, value });
       refs.quickSearch.value = "";
       refs.searchSuggestions.hidden = true;
       renderSearchTokens();
@@ -1395,42 +1405,28 @@
         dishToIngredients.get(dish)?.add(ingredient || allergen);
       });
 
-      const tokenIngredients = state.searchTokens.filter(token => token.type === "ingredient").map(token => token.value);
-      const tokenAllergens = state.searchTokens.filter(token => token.type === "allergen").map(token => token.value);
-      const tokenMenuItems = state.searchTokens.filter(token => token.type === "menu item").map(token => token.value);
+      const activeFilters = [...selectedIngredient, ...selectedAllergy];
+      const hasAllergyFilters = state.mode === "allergy" && selectedAllergy.length > 0;
+      const hasIngredientFilters = state.mode === "ingredient" && selectedIngredient.length > 0;
 
-      const ingredientFilters = [...new Set([...selectedIngredient, ...tokenIngredients])];
-      const allergyFilters = [...new Set([...selectedAllergy, ...tokenAllergens])];
-      const menuItemFilters = [...new Set([...(selectedDish ? [selectedDish] : []), ...tokenMenuItems])];
-
-      const hasAllergyFilters = allergyFilters.length > 0;
-      const hasIngredientFilters = ingredientFilters.length > 0;
-      const hasMenuItemFilters = menuItemFilters.length > 0;
-
-      const matchesAnyFilter = (values, filters) => {
-        const lowerValues = values.map(value => value.toLowerCase());
-        return filters.some(filter => lowerValues.some(value => value.includes(filter.toLowerCase())));
-      };
-
-      const containsDishes = hasMenuItemFilters
-        ? state.dishes.filter(dish => menuItemFilters.some(filter => dish.toLowerCase() === filter.toLowerCase()))
-        : (hasAllergyFilters || hasIngredientFilters)
+      const containsDishes = state.mode === "dish"
+        ? (selectedDish ? [selectedDish] : [])
+        : activeFilters.length
           ? state.dishes.filter(dish => {
-              const allergens = [...(dishToAllergens.get(dish) || [])];
-              const ingredients = [...(dishToIngredients.get(dish) || [])];
-              const matchesAllergen = !hasAllergyFilters || matchesAnyFilter(allergens, allergyFilters);
-              const matchesIngredient = !hasIngredientFilters || matchesAnyFilter(ingredients, ingredientFilters);
-              return matchesAllergen && matchesIngredient;
+              const values = state.mode === "allergy"
+                ? [...(dishToAllergens.get(dish) || [])]
+                : [...(dishToIngredients.get(dish) || [])];
+              return values.some(value => activeFilters.some(filter => value.toLowerCase().includes(filter.toLowerCase())));
             })
           : [];
 
       const safeDishes = (hasAllergyFilters || hasIngredientFilters)
         ? state.dishes.filter(dish => {
-            const allergens = [...(dishToAllergens.get(dish) || [])];
-            const ingredients = [...(dishToIngredients.get(dish) || [])];
-            const hasBlockedAllergen = hasAllergyFilters && matchesAnyFilter(allergens, allergyFilters);
-            const hasBlockedIngredient = hasIngredientFilters && matchesAnyFilter(ingredients, ingredientFilters);
-            return !(hasBlockedAllergen || hasBlockedIngredient);
+            const values = hasAllergyFilters
+              ? [...(dishToAllergens.get(dish) || [])]
+              : [...(dishToIngredients.get(dish) || [])];
+            const filters = hasAllergyFilters ? selectedAllergy : selectedIngredient;
+            return !values.some(value => filters.some(filter => value.toLowerCase().includes(filter.toLowerCase())));
           })
         : [];
       state.currentSafeDishes = [...safeDishes].sort(compareAlpha);
@@ -1448,8 +1444,8 @@
         state.currentSafePrintTitle = "Safe menu items";
       }
 
-      const hasActiveQuery = hasMenuItemFilters || hasAllergyFilters || hasIngredientFilters;
-      const canToggleResultTabs = hasAllergyFilters || hasIngredientFilters;
+      const hasActiveQuery = state.mode === "dish" ? Boolean(selectedDish) : activeFilters.length > 0;
+      const canToggleResultTabs = state.mode !== "dish" && (hasAllergyFilters || hasIngredientFilters);
       if (!canToggleResultTabs) state.resultsTab = "contains";
       refs.resultsPlaceholder.hidden = hasActiveQuery;
 
@@ -1465,10 +1461,10 @@
 
       if (hasAllergyFilters) {
         refs.selectedAllergiesSummary.hidden = false;
-        refs.selectedAllergiesSummary.textContent = `Allergens: ${allergyFilters.join(", ")}`;
+        refs.selectedAllergiesSummary.textContent = `Allergens: ${selectedAllergy.join(", ")}`;
       } else if (hasIngredientFilters) {
         refs.selectedAllergiesSummary.hidden = false;
-        refs.selectedAllergiesSummary.textContent = `Menu Items Containing ${ingredientFilters.join(", ")}`;
+        refs.selectedAllergiesSummary.textContent = `Menu Items Containing ${selectedIngredient.join(", ")}`;
       } else {
         refs.selectedAllergiesSummary.hidden = true;
         refs.selectedAllergiesSummary.textContent = "";
@@ -1479,8 +1475,8 @@
         containsDishes,
         dishToIngredients,
         dishToAllergens,
-        hasMenuItemFilters
-          ? "No menu items found for selected menu-item tokens."
+        state.mode === "dish"
+          ? "Choose a menu item to see its details."
           : "Choose one or more ingredients/allergens to see matching menu items."
       );
 
@@ -1489,7 +1485,7 @@
         state.currentSafeDishes,
         dishToIngredients,
         dishToAllergens,
-        hasAllergyFilters || hasIngredientFilters ? "No safe menu items for the selected filters." : "Choose one or more allergens or ingredients to see safe menu items."
+        hasAllergyFilters ? "No safe menu items for the selected allergens." : hasIngredientFilters ? "No menu items were found outside the selected ingredients." : "Choose one or more allergens or ingredients to see safe menu items."
       );
 
       refs.dishAllergenList.innerHTML = "";
