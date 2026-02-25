@@ -913,9 +913,7 @@
           button.addEventListener("click", () => {
             refs.dishSelect.value = dish;
             state.selectedDish = dish;
-            state.searchTokens = state.searchTokens.filter(token => token.type !== "menu item");
-            refs.quickSearch.value = "";
-            refs.searchSuggestions.hidden = true;
+            state.searchTokens = [{ type: "menu item", value: dish }];
             renderSearchTokens();
             updateResults();
           });
@@ -1021,7 +1019,6 @@
         setMode("dish");
         refs.dishSelect.value = value;
         state.searchTokens = state.searchTokens.filter(token => token.type !== "menu item");
-        state.searchTokens.push({ type: "menu item", value });
       } else if (type === "ingredient") {
         setMode("ingredient");
         const option = Array.from(refs.ingredientSelect.options).find(opt => opt.value === value);
