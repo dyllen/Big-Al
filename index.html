@@ -1490,45 +1490,26 @@
       refs.dishIngredientList.innerHTML = "";
     }
 
-    function clearQuickSearchFilters() {
+    function clearQuickSearchField() {
       refs.quickSearch.value = "";
-      state.searchTokens = [];
-      refs.searchTokenList.innerHTML = "";
-      refs.searchSuggestions.innerHTML = "";
       refs.searchSuggestions.hidden = true;
-      renderSearchTokens();
     }
 
-    refs.filters.addEventListener("click", (event) => {
-      if (event.target.closest(".menu-item-option")) {
-        clearQuickSearchFilters();
-      }
-    }, true);
-
     refs.ingredientSelect.addEventListener("change", () => {
-      clearQuickSearchFilters();
+      clearQuickSearchField();
       updateResults();
     });
     refs.allergySelect.addEventListener("change", () => {
-      clearQuickSearchFilters();
+      clearQuickSearchField();
       updateResults();
     });
     refs.dishSelect.addEventListener("change", () => {
-      clearQuickSearchFilters();
+      clearQuickSearchField();
       updateResults();
     });
-    refs.modeDishButton.addEventListener("click", () => {
-      clearQuickSearchFilters();
-      setMode("dish");
-    });
-    refs.modeIngredientButton.addEventListener("click", () => {
-      clearQuickSearchFilters();
-      setMode("ingredient");
-    });
-    refs.modeAllergyButton.addEventListener("click", () => {
-      clearQuickSearchFilters();
-      setMode("allergy");
-    });
+    refs.modeDishButton.addEventListener("click", () => setMode("dish"));
+    refs.modeIngredientButton.addEventListener("click", () => setMode("ingredient"));
+    refs.modeAllergyButton.addEventListener("click", () => setMode("allergy"));
     refs.containsTabButton.addEventListener("click", () => {
       state.resultsTab = "contains";
       updateResults();
