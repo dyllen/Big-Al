@@ -1347,6 +1347,27 @@
       </style>
       </head><body><h1>${printableTitle}</h1><ul>${dishes.map(d => `<li>${d}</li>`).join("")}</ul><p class="print-disclaimer">Disclaimer: We do our best to ensure menu items are safe, but we cannot guarantee 100% protection against cross-contamination.</p></body></html>`;
 
+      const printWindow = window.open("", "_blank");
+      if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(printableHtml);
+        printWindow.document.close();
+
+        const triggerWindowPrint = () => {
+          printWindow.focus();
+          printWindow.print();
+        };
+
+        if (printWindow.document.readyState === "complete") {
+          triggerWindowPrint();
+        } else {
+          printWindow.addEventListener("load", triggerWindowPrint, { once: true });
+        }
+
+        printWindow.addEventListener("afterprint", () => printWindow.close(), { once: true });
+        return;
+      }
+
       const frame = document.createElement("iframe");
       frame.style.position = "fixed";
       frame.style.right = "0";
