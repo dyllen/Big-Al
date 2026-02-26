@@ -1333,7 +1333,7 @@
     }
 
     function printSafeDishes() {
-      const dishes = state.currentSafeDishes || [];
+      const dishes = [...(state.currentSafeDishes || [])];
       if (!dishes.length) return;
 
       const printableTitle = state.currentSafePrintTitle || "Safe menu items";
@@ -1347,6 +1347,27 @@
       </style>
       </head><body><h1>${printableTitle}</h1><ul>${dishes.map(d => `<li>${d}</li>`).join("")}</ul><p class="print-disclaimer">Disclaimer: We do our best to ensure menu items are safe, but we cannot guarantee 100% protection against cross-contamination.</p></body></html>`;
 
+      const printWindow = window.open("", "_blank");
+      if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(printableHtml);
+        printWindow.document.close();
+
+        const triggerWindowPrint = () => {
+          printWindow.focus();
+          printWindow.print();
+        };
+
+        if (printWindow.document.readyState === "complete") {
+          triggerWindowPrint();
+        } else {
+          printWindow.addEventListener("load", triggerWindowPrint, { once: true });
+        }
+
+        printWindow.addEventListener("afterprint", () => printWindow.close(), { once: true });
+        return;
+      }
+
       const frame = document.createElement("iframe");
       frame.style.position = "fixed";
       frame.style.right = "0";
@@ -1357,29 +1378,24 @@
       frame.setAttribute("aria-hidden", "true");
       document.body.appendChild(frame);
 
-      const frameDoc = frame.contentWindow?.document;
-      if (!frameDoc || !frame.contentWindow) {
+      const cleanupFrame = () => {
         frame.remove();
-        return;
-      }
-
-      const triggerPrint = () => {
-        if (!frame.contentWindow) {
-          frame.remove();
-          return;
-        }
-        frame.contentWindow.focus();
-        frame.contentWindow.print();
-        window.setTimeout(() => frame.remove(), 1000);
       };
 
-      frame.onload = triggerPrint;
-      frameDoc.open();
-      frameDoc.write(printableHtml);
-      frameDoc.close();
-      if (frameDoc.readyState === "complete") {
-        triggerPrint();
-      }
+      frame.addEventListener("load", () => {
+        const iframeWindow = frame.contentWindow;
+        if (!iframeWindow) {
+          cleanupFrame();
+          return;
+        }
+
+        iframeWindow.addEventListener("afterprint", cleanupFrame, { once: true });
+        iframeWindow.focus();
+        iframeWindow.print();
+        window.setTimeout(cleanupFrame, 30000);
+      }, { once: true });
+
+      frame.srcdoc = printableHtml;
     }
 
     function getSelectedValues(selectElement) {
