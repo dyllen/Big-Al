@@ -1383,16 +1383,16 @@
       };
 
       frame.addEventListener("load", () => {
-        const iframeWindow = frame.contentWindow;
-        if (!iframeWindow) {
+        const printWindow = frame.contentWindow;
+        if (!printWindow) {
           cleanupFrame();
           return;
         }
 
-        iframeWindow.addEventListener("afterprint", cleanupFrame, { once: true });
-        iframeWindow.focus();
-        iframeWindow.print();
-        window.setTimeout(cleanupFrame, 30000);
+        printWindow.addEventListener("afterprint", cleanupFrame, { once: true });
+        printWindow.focus();
+        printWindow.print();
+        window.setTimeout(cleanupFrame, 1000);
       }, { once: true });
 
       frame.srcdoc = printableHtml;
