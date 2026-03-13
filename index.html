@@ -329,6 +329,88 @@
       justify-items: center;
     }
 
+    .feedback-link {
+      min-height: auto;
+      width: auto;
+      padding: 4px 8px;
+      border: none;
+      background: transparent;
+      color: #111;
+      text-decoration: underline;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .feedback-dialog {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      width: min(92vw, 460px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .feedback-dialog::backdrop {
+      background: rgba(31, 41, 55, 0.5);
+    }
+
+    .feedback-dialog h2 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+    }
+
+    .feedback-dialog label {
+      margin-bottom: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .feedback-input,
+    .feedback-textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    .feedback-input {
+      margin-bottom: 10px;
+    }
+
+    .feedback-textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    .feedback-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .feedback-actions button {
+      width: auto;
+      min-height: auto;
+      padding: 8px 14px;
+      font-size: 1rem;
+    }
+
+    .feedback-status {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .feedback-status.error {
+      color: var(--danger);
+    }
+
+    .feedback-status.success {
+      color: var(--ok);
+    }
+
     .clear-link {
       min-height: auto;
       width: auto;
@@ -695,6 +777,7 @@
       </div>
       <div class="button-grid">
         <button id="clearButton" type="button" class="clear-link">Clear filters</button>
+        <button id="openFeedbackButton" type="button" class="feedback-link">Send Dylan issues/feedback</button>
       </div>
       <p class="meta" id="sheetStatus">Waiting to load data…</p>
       <p class="loading" id="loadingIndicator">Loading sheet data…</p>
@@ -730,10 +813,26 @@
     </div>
   </main>
 
+  <dialog id="feedbackDialog" class="feedback-dialog">
+    <form id="feedbackForm" method="dialog">
+      <h2>Send Dylan issues/feedback</h2>
+      <label for="feedbackStaffName">Staff Member Name</label>
+      <input id="feedbackStaffName" class="feedback-input" type="text" placeholder="Enter your name" required />
+      <label for="feedbackMessage">Your message</label>
+      <textarea id="feedbackMessage" class="feedback-textarea" placeholder="Type your feedback here..." required></textarea>
+      <div class="feedback-actions">
+        <button id="cancelFeedbackButton" type="button">Cancel</button>
+        <button id="sendFeedbackButton" type="submit">Send</button>
+      </div>
+      <p id="feedbackStatus" class="feedback-status" hidden aria-live="polite"></p>
+    </form>
+  </dialog>
+
   <script>
     const SHEET_ID = "1NpN5obK9JLnkIxRsJPCQvKI58Qwxnn31AWMMk6JLIrg";
     const gvizBaseUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
     const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+    const FEEDBACK_WEBHOOK_URL = ""; // Add your deployed Google Apps Script Web App URL here.
     const state = {
       rows: [],
       dishes: [],
@@ -769,6 +868,14 @@
       searchTokenList: document.getElementById("searchTokenList"),
       searchSuggestions: document.getElementById("searchSuggestions"),
       clearButton: document.getElementById("clearButton"),
+      openFeedbackButton: document.getElementById("openFeedbackButton"),
+      feedbackDialog: document.getElementById("feedbackDialog"),
+      feedbackForm: document.getElementById("feedbackForm"),
+      feedbackStaffName: document.getElementById("feedbackStaffName"),
+      feedbackMessage: document.getElementById("feedbackMessage"),
+      feedbackStatus: document.getElementById("feedbackStatus"),
+      sendFeedbackButton: document.getElementById("sendFeedbackButton"),
+      cancelFeedbackButton: document.getElementById("cancelFeedbackButton"),
       resultsContainer: document.getElementById("resultsContainer"),
       resultsPlaceholder: document.getElementById("resultsPlaceholder"),
       resultsTabs: document.getElementById("resultsTabs"),
@@ -1516,6 +1623,60 @@
       }
     }
 
+    function setFeedbackStatus(message = "", type = "") {
+      refs.feedbackStatus.hidden = !message;
+      refs.feedbackStatus.textContent = message;
+      refs.feedbackStatus.classList.remove("error", "success");
+      if (type) refs.feedbackStatus.classList.add(type);
+    }
+
+    function openFeedbackDialog() {
+      refs.feedbackStaffName.value = "";
+      refs.feedbackMessage.value = "";
+      setFeedbackStatus();
+      refs.sendFeedbackButton.disabled = false;
+      refs.feedbackDialog.showModal();
+      refs.feedbackStaffName.focus();
+    }
+
+    function closeFeedbackDialog() {
+      refs.feedbackDialog.close();
+    }
+
+    async function sendFeedbackEmail(staffName, message) {
+      if (!FEEDBACK_WEBHOOK_URL) {
+        throw new Error("Feedback endpoint is not configured. Add FEEDBACK_WEBHOOK_URL in index.html.");
+      }
+
+      const response = await fetch(FEEDBACK_WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          staffName,
+          message,
+          timestamp: new Date().toISOString(),
+          source: "Big Al"
+        })
+      });
+
+      const rawBody = await response.text();
+      let data = {};
+      try {
+        data = JSON.parse(rawBody);
+      } catch {
+        data = {};
+      }
+
+      if (!response.ok || data.success === false) {
+        const trimmedBody = normalize(rawBody).slice(0, 200);
+        throw new Error(data.error || trimmedBody || `Feedback send failed (${response.status}).`);
+      }
+
+      return data;
+    }
+
     refs.ingredientSelect.addEventListener("change", () => {
       clearQuickSearchField();
       updateResults();
@@ -1569,6 +1730,38 @@
       applySearchSelection(target.dataset.type, target.dataset.value);
     });
     refs.printSafeButton.addEventListener("click", printSafeDishes);
+    refs.openFeedbackButton.addEventListener("click", openFeedbackDialog);
+    refs.cancelFeedbackButton.addEventListener("click", closeFeedbackDialog);
+    refs.feedbackForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const staffName = normalize(refs.feedbackStaffName.value);
+      const message = normalize(refs.feedbackMessage.value);
+      if (!staffName) {
+        setFeedbackStatus("Please enter a Staff Member Name.", "error");
+        refs.feedbackStaffName.focus();
+        return;
+      }
+      if (!message) {
+        setFeedbackStatus("Please enter feedback before sending.", "error");
+        refs.feedbackMessage.focus();
+        return;
+      }
+
+      setFeedbackStatus("Sending feedback…");
+      refs.sendFeedbackButton.disabled = true;
+
+      try {
+        await sendFeedbackEmail(staffName, message);
+        setFeedbackStatus("Feedback sent. Thank you!", "success");
+        window.setTimeout(() => {
+          closeFeedbackDialog();
+        }, 700);
+      } catch (error) {
+        setFeedbackStatus(error.message || "Could not send feedback email. Please try again.", "error");
+      } finally {
+        refs.sendFeedbackButton.disabled = false;
+      }
+    });
     refs.clearButton.addEventListener("click", () => {
       state.mode = "";
       refs.modeDishButton.classList.remove("active");
