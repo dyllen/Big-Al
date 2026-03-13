@@ -389,6 +389,20 @@
       font-size: 1rem;
     }
 
+    .feedback-status {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .feedback-status.error {
+      color: var(--danger);
+    }
+
+    .feedback-status.success {
+      color: var(--ok);
+    }
+
     .clear-link {
       min-height: auto;
       width: auto;
@@ -800,6 +814,7 @@
         <button id="cancelFeedbackButton" type="button">Cancel</button>
         <button id="sendFeedbackButton" type="submit">Send</button>
       </div>
+      <p id="feedbackStatus" class="feedback-status" hidden aria-live="polite"></p>
     </form>
   </dialog>
 
@@ -846,6 +861,8 @@
       feedbackDialog: document.getElementById("feedbackDialog"),
       feedbackForm: document.getElementById("feedbackForm"),
       feedbackMessage: document.getElementById("feedbackMessage"),
+      feedbackStatus: document.getElementById("feedbackStatus"),
+      sendFeedbackButton: document.getElementById("sendFeedbackButton"),
       cancelFeedbackButton: document.getElementById("cancelFeedbackButton"),
       resultsContainer: document.getElementById("resultsContainer"),
       resultsPlaceholder: document.getElementById("resultsPlaceholder"),
@@ -1594,8 +1611,17 @@
       }
     }
 
+    function setFeedbackStatus(message = "", type = "") {
+      refs.feedbackStatus.hidden = !message;
+      refs.feedbackStatus.textContent = message;
+      refs.feedbackStatus.classList.remove("error", "success");
+      if (type) refs.feedbackStatus.classList.add(type);
+    }
+
     function openFeedbackDialog() {
       refs.feedbackMessage.value = "";
+      setFeedbackStatus();
+      refs.sendFeedbackButton.disabled = false;
       refs.feedbackDialog.showModal();
       refs.feedbackMessage.focus();
     }
@@ -1604,9 +1630,27 @@
       refs.feedbackDialog.close();
     }
 
-    function sendFeedbackEmail(message) {
-      const mailto = `mailto:dylan@chottomotto.com.au?subject=${encodeURIComponent("Feedback from Big Al")}&body=${encodeURIComponent(message)}`;
-      window.location.href = mailto;
+    async function sendFeedbackEmail(message) {
+      const response = await fetch("send-feedback.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message })
+      });
+
+      let data = {};
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Could not send feedback email. Please try again.");
+      }
+
+      return data;
     }
 
     refs.ingredientSelect.addEventListener("change", () => {
@@ -1664,15 +1708,29 @@
     refs.printSafeButton.addEventListener("click", printSafeDishes);
     refs.openFeedbackButton.addEventListener("click", openFeedbackDialog);
     refs.cancelFeedbackButton.addEventListener("click", closeFeedbackDialog);
-    refs.feedbackForm.addEventListener("submit", (event) => {
+    refs.feedbackForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const message = normalize(refs.feedbackMessage.value);
       if (!message) {
+        setFeedbackStatus("Please enter feedback before sending.", "error");
         refs.feedbackMessage.focus();
         return;
       }
-      sendFeedbackEmail(message);
-      closeFeedbackDialog();
+
+      setFeedbackStatus("Sending feedback…");
+      refs.sendFeedbackButton.disabled = true;
+
+      try {
+        await sendFeedbackEmail(message);
+        setFeedbackStatus("Feedback sent. Thank you!", "success");
+        window.setTimeout(() => {
+          closeFeedbackDialog();
+        }, 700);
+      } catch (error) {
+        setFeedbackStatus(error.message || "Could not send feedback email. Please try again.", "error");
+      } finally {
+        refs.sendFeedbackButton.disabled = false;
+      }
     });
     refs.clearButton.addEventListener("click", () => {
       state.mode = "";
