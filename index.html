@@ -364,14 +364,22 @@
       font-weight: 700;
     }
 
+    .feedback-input,
     .feedback-textarea {
       width: 100%;
-      min-height: 130px;
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 10px;
       font-size: 1rem;
       font-family: inherit;
+    }
+
+    .feedback-input {
+      margin-bottom: 10px;
+    }
+
+    .feedback-textarea {
+      min-height: 130px;
       resize: vertical;
     }
 
@@ -808,6 +816,8 @@
   <dialog id="feedbackDialog" class="feedback-dialog">
     <form id="feedbackForm" method="dialog">
       <h2>Send Dylan issues/feedback</h2>
+      <label for="feedbackStaffName">Staff Member Name</label>
+      <input id="feedbackStaffName" class="feedback-input" type="text" placeholder="Enter your name" required />
       <label for="feedbackMessage">Your message</label>
       <textarea id="feedbackMessage" class="feedback-textarea" placeholder="Type your feedback here..." required></textarea>
       <div class="feedback-actions">
@@ -822,6 +832,7 @@
     const SHEET_ID = "1NpN5obK9JLnkIxRsJPCQvKI58Qwxnn31AWMMk6JLIrg";
     const gvizBaseUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
     const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+    const FEEDBACK_WEBHOOK_URL = ""; // Add your deployed Google Apps Script Web App URL here.
     const state = {
       rows: [],
       dishes: [],
@@ -860,6 +871,7 @@
       openFeedbackButton: document.getElementById("openFeedbackButton"),
       feedbackDialog: document.getElementById("feedbackDialog"),
       feedbackForm: document.getElementById("feedbackForm"),
+      feedbackStaffName: document.getElementById("feedbackStaffName"),
       feedbackMessage: document.getElementById("feedbackMessage"),
       feedbackStatus: document.getElementById("feedbackStatus"),
       sendFeedbackButton: document.getElementById("sendFeedbackButton"),
@@ -1619,35 +1631,47 @@
     }
 
     function openFeedbackDialog() {
+      refs.feedbackStaffName.value = "";
       refs.feedbackMessage.value = "";
       setFeedbackStatus();
       refs.sendFeedbackButton.disabled = false;
       refs.feedbackDialog.showModal();
-      refs.feedbackMessage.focus();
+      refs.feedbackStaffName.focus();
     }
 
     function closeFeedbackDialog() {
       refs.feedbackDialog.close();
     }
 
-    async function sendFeedbackEmail(message) {
-      const response = await fetch("send-feedback.php", {
+    async function sendFeedbackEmail(staffName, message) {
+      if (!FEEDBACK_WEBHOOK_URL) {
+        throw new Error("Feedback endpoint is not configured. Add FEEDBACK_WEBHOOK_URL in index.html.");
+      }
+
+      const response = await fetch(FEEDBACK_WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({
+          staffName,
+          message,
+          timestamp: new Date().toISOString(),
+          source: "Big Al"
+        })
       });
 
+      const rawBody = await response.text();
       let data = {};
       try {
-        data = await response.json();
+        data = JSON.parse(rawBody);
       } catch {
         data = {};
       }
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Could not send feedback email. Please try again.");
+      if (!response.ok || data.success === false) {
+        const trimmedBody = normalize(rawBody).slice(0, 200);
+        throw new Error(data.error || trimmedBody || `Feedback send failed (${response.status}).`);
       }
 
       return data;
@@ -1710,7 +1734,13 @@
     refs.cancelFeedbackButton.addEventListener("click", closeFeedbackDialog);
     refs.feedbackForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+      const staffName = normalize(refs.feedbackStaffName.value);
       const message = normalize(refs.feedbackMessage.value);
+      if (!staffName) {
+        setFeedbackStatus("Please enter a Staff Member Name.", "error");
+        refs.feedbackStaffName.focus();
+        return;
+      }
       if (!message) {
         setFeedbackStatus("Please enter feedback before sending.", "error");
         refs.feedbackMessage.focus();
@@ -1721,7 +1751,7 @@
       refs.sendFeedbackButton.disabled = true;
 
       try {
-        await sendFeedbackEmail(message);
+        await sendFeedbackEmail(staffName, message);
         setFeedbackStatus("Feedback sent. Thank you!", "success");
         window.setTimeout(() => {
           closeFeedbackDialog();
