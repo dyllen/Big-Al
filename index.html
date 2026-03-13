@@ -329,6 +329,66 @@
       justify-items: center;
     }
 
+    .feedback-link {
+      min-height: auto;
+      width: auto;
+      padding: 4px 8px;
+      border: none;
+      background: transparent;
+      color: #111;
+      text-decoration: underline;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .feedback-dialog {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      width: min(92vw, 460px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .feedback-dialog::backdrop {
+      background: rgba(31, 41, 55, 0.5);
+    }
+
+    .feedback-dialog h2 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+    }
+
+    .feedback-dialog label {
+      margin-bottom: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .feedback-textarea {
+      width: 100%;
+      min-height: 130px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .feedback-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .feedback-actions button {
+      width: auto;
+      min-height: auto;
+      padding: 8px 14px;
+      font-size: 1rem;
+    }
+
     .clear-link {
       min-height: auto;
       width: auto;
@@ -695,6 +755,7 @@
       </div>
       <div class="button-grid">
         <button id="clearButton" type="button" class="clear-link">Clear filters</button>
+        <button id="openFeedbackButton" type="button" class="feedback-link">Send Dylan issues/feedback</button>
       </div>
       <p class="meta" id="sheetStatus">Waiting to load data…</p>
       <p class="loading" id="loadingIndicator">Loading sheet data…</p>
@@ -729,6 +790,18 @@
     </section>
     </div>
   </main>
+
+  <dialog id="feedbackDialog" class="feedback-dialog">
+    <form id="feedbackForm" method="dialog">
+      <h2>Send Dylan issues/feedback</h2>
+      <label for="feedbackMessage">Your message</label>
+      <textarea id="feedbackMessage" class="feedback-textarea" placeholder="Type your feedback here..." required></textarea>
+      <div class="feedback-actions">
+        <button id="cancelFeedbackButton" type="button">Cancel</button>
+        <button id="sendFeedbackButton" type="submit">Send</button>
+      </div>
+    </form>
+  </dialog>
 
   <script>
     const SHEET_ID = "1NpN5obK9JLnkIxRsJPCQvKI58Qwxnn31AWMMk6JLIrg";
@@ -769,6 +842,11 @@
       searchTokenList: document.getElementById("searchTokenList"),
       searchSuggestions: document.getElementById("searchSuggestions"),
       clearButton: document.getElementById("clearButton"),
+      openFeedbackButton: document.getElementById("openFeedbackButton"),
+      feedbackDialog: document.getElementById("feedbackDialog"),
+      feedbackForm: document.getElementById("feedbackForm"),
+      feedbackMessage: document.getElementById("feedbackMessage"),
+      cancelFeedbackButton: document.getElementById("cancelFeedbackButton"),
       resultsContainer: document.getElementById("resultsContainer"),
       resultsPlaceholder: document.getElementById("resultsPlaceholder"),
       resultsTabs: document.getElementById("resultsTabs"),
@@ -1516,6 +1594,21 @@
       }
     }
 
+    function openFeedbackDialog() {
+      refs.feedbackMessage.value = "";
+      refs.feedbackDialog.showModal();
+      refs.feedbackMessage.focus();
+    }
+
+    function closeFeedbackDialog() {
+      refs.feedbackDialog.close();
+    }
+
+    function sendFeedbackEmail(message) {
+      const mailto = `mailto:dylan@chottomotto.com.au?subject=${encodeURIComponent("Feedback from Big Al")}&body=${encodeURIComponent(message)}`;
+      window.location.href = mailto;
+    }
+
     refs.ingredientSelect.addEventListener("change", () => {
       clearQuickSearchField();
       updateResults();
@@ -1569,6 +1662,18 @@
       applySearchSelection(target.dataset.type, target.dataset.value);
     });
     refs.printSafeButton.addEventListener("click", printSafeDishes);
+    refs.openFeedbackButton.addEventListener("click", openFeedbackDialog);
+    refs.cancelFeedbackButton.addEventListener("click", closeFeedbackDialog);
+    refs.feedbackForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const message = normalize(refs.feedbackMessage.value);
+      if (!message) {
+        refs.feedbackMessage.focus();
+        return;
+      }
+      sendFeedbackEmail(message);
+      closeFeedbackDialog();
+    });
     refs.clearButton.addEventListener("click", () => {
       state.mode = "";
       refs.modeDishButton.classList.remove("active");
