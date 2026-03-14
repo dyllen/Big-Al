@@ -1545,16 +1545,28 @@
     }
 
     function openFeedbackDialog() {
+      if (!refs.feedbackDialog) return;
       refs.feedbackStaffName.value = "";
       refs.feedbackMessage.value = "";
       setFeedbackStatus();
       refs.sendFeedbackButton.disabled = false;
-      refs.feedbackDialog.showModal();
+
+      if (typeof refs.feedbackDialog.showModal === "function") {
+        refs.feedbackDialog.showModal();
+      } else {
+        refs.feedbackDialog.setAttribute("open", "open");
+      }
+
       refs.feedbackStaffName.focus();
     }
 
     function closeFeedbackDialog() {
-      refs.feedbackDialog.close();
+      if (!refs.feedbackDialog) return;
+      if (typeof refs.feedbackDialog.close === "function") {
+        refs.feedbackDialog.close();
+      } else {
+        refs.feedbackDialog.removeAttribute("open");
+      }
     }
 
     async function sendFeedbackEmail(staffName, message) {
