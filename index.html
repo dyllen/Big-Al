@@ -329,88 +329,6 @@
       justify-items: center;
     }
 
-    .feedback-link {
-      min-height: auto;
-      width: auto;
-      padding: 4px 8px;
-      border: none;
-      background: transparent;
-      color: #111;
-      text-decoration: underline;
-      font-size: 1rem;
-      font-weight: 700;
-    }
-
-    .feedback-dialog {
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 18px;
-      width: min(92vw, 460px);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
-    }
-
-    .feedback-dialog::backdrop {
-      background: rgba(31, 41, 55, 0.5);
-    }
-
-    .feedback-dialog h2 {
-      margin: 0 0 10px;
-      font-size: 1.2rem;
-    }
-
-    .feedback-dialog label {
-      margin-bottom: 8px;
-      font-size: 1rem;
-      font-weight: 700;
-    }
-
-    .feedback-input,
-    .feedback-textarea {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px;
-      font-size: 1rem;
-      font-family: inherit;
-    }
-
-    .feedback-input {
-      margin-bottom: 10px;
-    }
-
-    .feedback-textarea {
-      min-height: 130px;
-      resize: vertical;
-    }
-
-    .feedback-actions {
-      margin-top: 12px;
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-
-    .feedback-actions button {
-      width: auto;
-      min-height: auto;
-      padding: 8px 14px;
-      font-size: 1rem;
-    }
-
-    .feedback-status {
-      margin-top: 10px;
-      font-size: 0.95rem;
-      font-weight: 700;
-    }
-
-    .feedback-status.error {
-      color: var(--danger);
-    }
-
-    .feedback-status.success {
-      color: var(--ok);
-    }
-
     .clear-link {
       min-height: auto;
       width: auto;
@@ -833,9 +751,9 @@
     const gvizBaseUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
     const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
     const FEEDBACK_EMAILJS = {
-      serviceId: "", // EmailJS service ID
-      templateId: "", // EmailJS template ID
-      publicKey: "" // EmailJS public key
+      serviceId: "service_kxf75en", // EmailJS service ID
+      templateId: "template_sjuvzm7", // EmailJS template ID
+      publicKey: "fM8q6my1b5UZ4IsVo" // EmailJS public key
     }; // Pure client-side feedback delivery via EmailJS.
     const state = {
       rows: [],
@@ -872,14 +790,6 @@
       searchTokenList: document.getElementById("searchTokenList"),
       searchSuggestions: document.getElementById("searchSuggestions"),
       clearButton: document.getElementById("clearButton"),
-      openFeedbackButton: document.getElementById("openFeedbackButton"),
-      feedbackDialog: document.getElementById("feedbackDialog"),
-      feedbackForm: document.getElementById("feedbackForm"),
-      feedbackStaffName: document.getElementById("feedbackStaffName"),
-      feedbackMessage: document.getElementById("feedbackMessage"),
-      feedbackStatus: document.getElementById("feedbackStatus"),
-      sendFeedbackButton: document.getElementById("sendFeedbackButton"),
-      cancelFeedbackButton: document.getElementById("cancelFeedbackButton"),
       resultsContainer: document.getElementById("resultsContainer"),
       resultsPlaceholder: document.getElementById("resultsPlaceholder"),
       resultsTabs: document.getElementById("resultsTabs"),
@@ -1735,38 +1645,6 @@
       applySearchSelection(target.dataset.type, target.dataset.value);
     });
     refs.printSafeButton.addEventListener("click", printSafeDishes);
-    refs.openFeedbackButton.addEventListener("click", openFeedbackDialog);
-    refs.cancelFeedbackButton.addEventListener("click", closeFeedbackDialog);
-    refs.feedbackForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const staffName = normalize(refs.feedbackStaffName.value);
-      const message = normalize(refs.feedbackMessage.value);
-      if (!staffName) {
-        setFeedbackStatus("Please enter a Staff Member Name.", "error");
-        refs.feedbackStaffName.focus();
-        return;
-      }
-      if (!message) {
-        setFeedbackStatus("Please enter feedback before sending.", "error");
-        refs.feedbackMessage.focus();
-        return;
-      }
-
-      setFeedbackStatus("Sending feedback…");
-      refs.sendFeedbackButton.disabled = true;
-
-      try {
-        await sendFeedbackEmail(staffName, message);
-        setFeedbackStatus("Feedback sent. Thank you!", "success");
-        window.setTimeout(() => {
-          closeFeedbackDialog();
-        }, 700);
-      } catch (error) {
-        setFeedbackStatus(error.message || "Could not send feedback email. Please try again.", "error");
-      } finally {
-        refs.sendFeedbackButton.disabled = false;
-      }
-    });
     refs.clearButton.addEventListener("click", () => {
       state.mode = "";
       refs.modeDishButton.classList.remove("active");
