@@ -695,6 +695,7 @@
       </div>
       <div class="button-grid">
         <button id="clearButton" type="button" class="clear-link">Clear filters</button>
+        <button id="openFeedbackButton" type="button" class="feedback-link">Send Dylan Issues/Feedback</button>
       </div>
       <p class="meta" id="sheetStatus">Waiting to load data…</p>
       <p class="loading" id="loadingIndicator">Loading sheet data…</p>
@@ -729,6 +730,21 @@
     </section>
     </div>
   </main>
+
+  <dialog id="feedbackDialog" class="feedback-dialog">
+    <form id="feedbackForm" method="dialog">
+      <h2>Send Dylan Issues/Feedback</h2>
+      <label for="feedbackStaffName">Staff Member Name</label>
+      <input id="feedbackStaffName" class="feedback-input" type="text" placeholder="Enter your name" required />
+      <label for="feedbackMessage">Your message</label>
+      <textarea id="feedbackMessage" class="feedback-textarea" placeholder="Type your feedback here..." required></textarea>
+      <div class="feedback-actions">
+        <button id="cancelFeedbackButton" type="button">Cancel</button>
+        <button id="sendFeedbackButton" type="submit">Send</button>
+      </div>
+      <p id="feedbackStatus" class="feedback-status" hidden aria-live="polite"></p>
+    </form>
+  </dialog>
 
   <script>
     const SHEET_ID = "1NpN5obK9JLnkIxRsJPCQvKI58Qwxnn31AWMMk6JLIrg";
