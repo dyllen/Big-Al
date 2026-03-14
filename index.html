@@ -734,6 +734,11 @@
     const SHEET_ID = "1NpN5obK9JLnkIxRsJPCQvKI58Qwxnn31AWMMk6JLIrg";
     const gvizBaseUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
     const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+    const FEEDBACK_EMAILJS = {
+      serviceId: "service_kxf75en", // EmailJS service ID
+      templateId: "template_sjuvzm7", // EmailJS template ID
+      publicKey: "fM8q6my1b5UZ4IsVo" // EmailJS public key
+    }; // Pure client-side feedback delivery via EmailJS.
     const state = {
       rows: [],
       dishes: [],
@@ -1514,6 +1519,61 @@
         state.searchTokens = [];
         renderSearchTokens();
       }
+    }
+
+    function setFeedbackStatus(message = "", type = "") {
+      refs.feedbackStatus.hidden = !message;
+      refs.feedbackStatus.textContent = message;
+      refs.feedbackStatus.classList.remove("error", "success");
+      if (type) refs.feedbackStatus.classList.add(type);
+    }
+
+    function openFeedbackDialog() {
+      refs.feedbackStaffName.value = "";
+      refs.feedbackMessage.value = "";
+      setFeedbackStatus();
+      refs.sendFeedbackButton.disabled = false;
+      refs.feedbackDialog.showModal();
+      refs.feedbackStaffName.focus();
+    }
+
+    function closeFeedbackDialog() {
+      refs.feedbackDialog.close();
+    }
+
+    async function sendFeedbackEmail(staffName, message) {
+      const { serviceId, templateId, publicKey } = FEEDBACK_EMAILJS;
+      if (!serviceId || !templateId || !publicKey) {
+        throw new Error("EmailJS is not configured. Set FEEDBACK_EMAILJS serviceId/templateId/publicKey in index.html.");
+      }
+
+      const payload = {
+        service_id: serviceId,
+        template_id: templateId,
+        user_id: publicKey,
+        template_params: {
+          staff_name: staffName,
+          message,
+          timestamp: new Date().toISOString(),
+          source: "Big Al"
+        }
+      };
+
+      const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const rawBody = await response.text();
+      if (!response.ok) {
+        const trimmedBody = normalize(rawBody).slice(0, 200);
+        throw new Error(trimmedBody || `Feedback send failed (${response.status}).`);
+      }
+
+      return { success: true };
     }
 
     refs.ingredientSelect.addEventListener("change", () => {
