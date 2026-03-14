@@ -316,7 +316,7 @@
       touch-action: manipulation;
     }
 
-    select:focus-visible, button:focus-visible {
+    select:focus-visible, button:focus-visible, a:focus-visible {
       outline: 3px solid #6750a4;
       outline-offset: 2px;
     }
@@ -327,6 +327,102 @@
       gap: 12px;
       margin-top: 14px;
       justify-items: center;
+    }
+
+    .feedback-link {
+      color: var(--accent);
+      text-decoration: underline;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.2;
+      padding: 4px 8px;
+    }
+
+    .feedback-link:hover {
+      color: #4c3b82;
+    }
+
+    .feedback-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(31, 41, 55, 0.55);
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      z-index: 999;
+    }
+
+    .feedback-modal-overlay[hidden] {
+      display: none;
+    }
+
+    .feedback-dialog {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      width: min(92vw, 480px);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+    }
+
+    .feedback-dialog h2 {
+      margin: 0 0 10px;
+      font-size: 1.25rem;
+      color: var(--ink);
+    }
+
+    .feedback-dialog label {
+      margin-bottom: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .feedback-input,
+    .feedback-textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    .feedback-input {
+      margin-bottom: 10px;
+    }
+
+    .feedback-textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    .feedback-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .feedback-actions button {
+      width: auto;
+      min-height: auto;
+      padding: 8px 14px;
+      font-size: 1rem;
+    }
+
+    .feedback-status {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .feedback-status.error {
+      color: var(--danger);
+    }
+
+    .feedback-status.success {
+      color: var(--ok);
     }
 
     .clear-link {
@@ -695,7 +791,7 @@
       </div>
       <div class="button-grid">
         <button id="clearButton" type="button" class="clear-link">Clear filters</button>
-        <button id="openFeedbackButton" type="button" class="feedback-link">Send Dylan Issues/Feedback</button>
+        <a id="openFeedbackLink" class="feedback-link" href="#">Send Dylan Issues/Feedback</a>
       </div>
       <p class="meta" id="sheetStatus">Waiting to load data…</p>
       <p class="loading" id="loadingIndicator">Loading sheet data…</p>
@@ -731,20 +827,22 @@
     </div>
   </main>
 
-  <dialog id="feedbackDialog" class="feedback-dialog">
-    <form id="feedbackForm" method="dialog">
-      <h2>Send Dylan Issues/Feedback</h2>
-      <label for="feedbackStaffName">Staff Member Name</label>
-      <input id="feedbackStaffName" class="feedback-input" type="text" placeholder="Enter your name" required />
-      <label for="feedbackMessage">Your message</label>
-      <textarea id="feedbackMessage" class="feedback-textarea" placeholder="Type your feedback here..." required></textarea>
-      <div class="feedback-actions">
-        <button id="cancelFeedbackButton" type="button">Cancel</button>
-        <button id="sendFeedbackButton" type="submit">Send</button>
-      </div>
-      <p id="feedbackStatus" class="feedback-status" hidden aria-live="polite"></p>
-    </form>
-  </dialog>
+  <div id="feedbackModalOverlay" class="feedback-modal-overlay" hidden>
+    <div id="feedbackDialog" class="feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="feedbackDialogTitle">
+      <form id="feedbackForm">
+        <h2 id="feedbackDialogTitle">Send Dylan Issues/Feedback</h2>
+        <label for="feedbackStaffName">Staff Member Name</label>
+        <input id="feedbackStaffName" class="feedback-input" type="text" placeholder="Enter your name" required />
+        <label for="feedbackMessage">Your message</label>
+        <textarea id="feedbackMessage" class="feedback-textarea" placeholder="Type your feedback here..." required></textarea>
+        <div class="feedback-actions">
+          <button id="cancelFeedbackButton" type="button">Cancel</button>
+          <button id="sendFeedbackButton" type="submit">Send</button>
+        </div>
+        <p id="feedbackStatus" class="feedback-status" hidden aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
 
   <script>
     const SHEET_ID = "1NpN5obK9JLnkIxRsJPCQvKI58Qwxnn31AWMMk6JLIrg";
@@ -790,6 +888,15 @@
       searchTokenList: document.getElementById("searchTokenList"),
       searchSuggestions: document.getElementById("searchSuggestions"),
       clearButton: document.getElementById("clearButton"),
+      openFeedbackLink: document.getElementById("openFeedbackLink"),
+      feedbackModalOverlay: document.getElementById("feedbackModalOverlay"),
+      feedbackDialog: document.getElementById("feedbackDialog"),
+      feedbackForm: document.getElementById("feedbackForm"),
+      feedbackStaffName: document.getElementById("feedbackStaffName"),
+      feedbackMessage: document.getElementById("feedbackMessage"),
+      feedbackStatus: document.getElementById("feedbackStatus"),
+      sendFeedbackButton: document.getElementById("sendFeedbackButton"),
+      cancelFeedbackButton: document.getElementById("cancelFeedbackButton"),
       resultsContainer: document.getElementById("resultsContainer"),
       resultsPlaceholder: document.getElementById("resultsPlaceholder"),
       resultsTabs: document.getElementById("resultsTabs"),
@@ -1545,28 +1652,18 @@
     }
 
     function openFeedbackDialog() {
-      if (!refs.feedbackDialog) return;
+      if (!refs.feedbackModalOverlay) return;
       refs.feedbackStaffName.value = "";
       refs.feedbackMessage.value = "";
       setFeedbackStatus();
       refs.sendFeedbackButton.disabled = false;
-
-      if (typeof refs.feedbackDialog.showModal === "function") {
-        refs.feedbackDialog.showModal();
-      } else {
-        refs.feedbackDialog.setAttribute("open", "open");
-      }
-
+      refs.feedbackModalOverlay.hidden = false;
       refs.feedbackStaffName.focus();
     }
 
     function closeFeedbackDialog() {
-      if (!refs.feedbackDialog) return;
-      if (typeof refs.feedbackDialog.close === "function") {
-        refs.feedbackDialog.close();
-      } else {
-        refs.feedbackDialog.removeAttribute("open");
-      }
+      if (!refs.feedbackModalOverlay) return;
+      refs.feedbackModalOverlay.hidden = true;
     }
 
     async function sendFeedbackEmail(staffName, message) {
@@ -1657,6 +1754,47 @@
       applySearchSelection(target.dataset.type, target.dataset.value);
     });
     refs.printSafeButton.addEventListener("click", printSafeDishes);
+    refs.openFeedbackLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      openFeedbackDialog();
+    });
+    refs.cancelFeedbackButton.addEventListener("click", closeFeedbackDialog);
+    refs.feedbackModalOverlay.addEventListener("click", (event) => {
+      if (event.target === refs.feedbackModalOverlay) closeFeedbackDialog();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !refs.feedbackModalOverlay.hidden) closeFeedbackDialog();
+    });
+    refs.feedbackForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const staffName = normalize(refs.feedbackStaffName.value);
+      const message = normalize(refs.feedbackMessage.value);
+      if (!staffName) {
+        setFeedbackStatus("Please enter a Staff Member Name.", "error");
+        refs.feedbackStaffName.focus();
+        return;
+      }
+      if (!message) {
+        setFeedbackStatus("Please enter feedback before sending.", "error");
+        refs.feedbackMessage.focus();
+        return;
+      }
+
+      setFeedbackStatus("Sending feedback…");
+      refs.sendFeedbackButton.disabled = true;
+
+      try {
+        await sendFeedbackEmail(staffName, message);
+        setFeedbackStatus("Feedback sent. Thank you!", "success");
+        window.setTimeout(() => {
+          closeFeedbackDialog();
+        }, 700);
+      } catch (error) {
+        setFeedbackStatus(error.message || "Could not send feedback email. Please try again.", "error");
+      } finally {
+        refs.sendFeedbackButton.disabled = false;
+      }
+    });
     refs.clearButton.addEventListener("click", () => {
       state.mode = "";
       refs.modeDishButton.classList.remove("active");
