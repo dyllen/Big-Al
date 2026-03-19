@@ -973,31 +973,30 @@
         const rawCategory = toCapitalizedCase(row.category || "Uncategorized") || "Uncategorized";
         const rawAllergen = toSentenceCase(row.allergen);
         const rawIngredient = toSentenceCase(row.ingredient || row.allergen);
-        const normalizedAllergen = rawAllergen || rawIngredient;
         if (!rawDish || !rawIngredient) continue;
 
         const dishKey = canonicalKey(rawDish);
-        const allergenKey = canonicalKey(normalizedAllergen);
+        const allergenKey = canonicalKey(rawAllergen);
         const ingredientKey = canonicalKey(rawIngredient);
         if (!dishKey || !ingredientKey) continue;
 
         dishLabels.set(dishKey, choosePreferredLabel(dishLabels.get(dishKey), rawDish));
         categoryLabels.set(dishKey, choosePreferredLabel(categoryLabels.get(dishKey), rawCategory));
-        allergenLabels.set(allergenKey, choosePreferredLabel(allergenLabels.get(allergenKey), normalizedAllergen));
-        if (ingredientKey) ingredientLabels.set(ingredientKey, choosePreferredLabel(ingredientLabels.get(ingredientKey), rawIngredient || rawAllergen));
+        if (allergenKey) allergenLabels.set(allergenKey, choosePreferredLabel(allergenLabels.get(allergenKey), rawAllergen));
+        ingredientLabels.set(ingredientKey, choosePreferredLabel(ingredientLabels.get(ingredientKey), rawIngredient || rawAllergen));
 
         const dedupeKey = `${dishKey}||${ingredientKey}||${allergenKey}`;
         if (!seenPairs.has(dedupeKey)) {
           seenPairs.add(dedupeKey);
-          pairKeys.push([dishKey, allergenKey, ingredientKey || allergenKey]);
+          pairKeys.push([dishKey, allergenKey, ingredientKey]);
         }
       }
 
       return pairKeys.map(([dishKey, allergenKey, ingredientKey]) => ({
         dish: dishLabels.get(dishKey),
         category: categoryLabels.get(dishKey) || "Uncategorized",
-        allergen: allergenLabels.get(allergenKey),
-        ingredient: ingredientLabels.get(ingredientKey) || allergenLabels.get(allergenKey)
+        allergen: allergenLabels.get(allergenKey) || "",
+        ingredient: ingredientLabels.get(ingredientKey) || ""
       }));
     }
 
@@ -1222,7 +1221,7 @@
 
         const allergensLine = document.createElement("div");
         allergensLine.className = "menu-item-allergens";
-        allergensLine.textContent = `Allergens: ${allergens.join(", ") || "None listed"}`;
+        allergensLine.textContent = `Allergens: ${allergens.join(", ") || "None"}`;
 
         const ingredientsLine = document.createElement("div");
         ingredientsLine.textContent = `Ingredients: ${ingredients.join(", ") || "None listed"}`;
@@ -1373,7 +1372,7 @@
               dish,
               category,
               ingredient: ingredient || allergen,
-              allergen: allergen || ingredient
+              allergen
             });
           }
         }
@@ -1411,7 +1410,7 @@
 
         state.rows = rows;
         state.dishes = [...new Set(rows.map(r => r.dish))].sort(compareAlpha);
-        state.allergens = [...new Set(rows.map(r => r.allergen))].sort(compareAlpha);
+        state.allergens = [...new Set(rows.map(r => r.allergen).filter(Boolean))].sort(compareAlpha);
         state.ingredients = [...new Set(rows.map(r => r.ingredient || r.allergen))].sort(compareAlpha);
         state.categories = [...new Set(rows.map(r => r.category || "Uncategorized"))].sort(compareAlpha);
         state.dishToCategory = new Map();
@@ -1544,7 +1543,7 @@
       const dishToIngredients = new Map();
       state.dishes.forEach(d => { dishToAllergens.set(d, new Set()); dishToIngredients.set(d, new Set()); });
       state.rows.forEach(({ dish, allergen, ingredient }) => {
-        dishToAllergens.get(dish)?.add(allergen);
+        if (allergen) dishToAllergens.get(dish)?.add(allergen);
         dishToIngredients.get(dish)?.add(ingredient || allergen);
       });
 
